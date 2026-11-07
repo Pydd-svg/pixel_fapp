@@ -1,0 +1,2 @@
+<text class="tw" bindtap="skip">{{shown}}</text>
+<text wx:if="{{!finished}}" class="tw__caret">|</text>

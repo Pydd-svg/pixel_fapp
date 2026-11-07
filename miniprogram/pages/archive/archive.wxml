@@ -1,0 +1,21 @@
+<view class="page arc">
+  <view class="arc__head">
+    <text class="arc__title">我的档案</text>
+    <text class="arc__count">{{count}}/{{max}}</text>
+  </view>
+  <text class="arc__note">只存在本机，云端不留原始输入</text>
+
+  <state-view wx:if="{{empty}}" state="empty" title="还没有保存过卡片" desc="出卡后点【保存】就会出现在这里" bind:retry="goHome" />
+
+  <view wx:else class="arc__list">
+    <view wx:for="{{list}}" wx:key="id" class="arc__item tap" data-id="{{item.id}}" bindtap="onOpen">
+      <view class="arc__item-main">
+        <text class="arc__item-title">{{item.title}}</text>
+        <text class="arc__item-meta">{{item.tsText}} · {{item.category}} · 置信度{{item.confidence === 'high' ? '高' : item.confidence === 'medium' ? '中' : '低'}}</text>
+      </view>
+      <text class="arc__del" data-id="{{item.id}}" catchtap="onDelete">删除</text>
+    </view>
+
+    <view class="arc__clear tap" bindtap="onClear">清空档案</view>
+  </view>
+</view>

@@ -1,0 +1,5 @@
+/* 归属 C 岗。走查表第 2 条：底色 #FFF1EE + 左 4px #FF5A3C 竖条 + ⚠️，不要正红大色块 */
+.flag { background: #FFF1EE; border-left: 8rpx solid #FF5A3C; border-radius: 8rpx; padding: 16rpx 20rpx; }
+.flag__item { display: flex; align-items: flex-start; padding: 6rpx 0; }
+.flag__icon { margin-right: 8rpx; font-size: 24rpx; }
+.flag__text { font-size: 28rpx; color: #1F2937; flex: 1; }

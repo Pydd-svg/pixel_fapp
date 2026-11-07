@@ -1,0 +1,44 @@
+/**
+ * base.wxss —— 全局基础样式
+ * 归属：C 岗（UI）。A 岗仅落最小可用版，避免编译期空引用。
+ */
+@import "./tokens.wxss";
+
+page {
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-size: var(--fs-body);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  line-height: 1.6;
+}
+
+view,
+text,
+button,
+input,
+textarea {
+  box-sizing: border-box;
+}
+
+.page {
+  min-height: 100vh;
+  padding: var(--sp-gap) var(--sp-gap) 48rpx;
+}
+
+/* 可点元素最小点击区（走查表第 10 条：≥ 88rpx） */
+.tap {
+  min-height: 88rpx;
+}
+
+/* 骨架屏占位 */
+.sk {
+  background: linear-gradient(90deg, #EEF0F3 25%, #F7F8FA 37%, #EEF0F3 63%);
+  background-size: 400% 100%;
+  animation: sk 1.2s ease infinite;
+  border-radius: 8rpx;
+}
+
+@keyframes sk {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}

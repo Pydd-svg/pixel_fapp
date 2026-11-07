@@ -1,0 +1,13 @@
+/* 档案页样式占位 —— 归属 C 岗 */
+.arc { padding: 24rpx; }
+.arc__head { display: flex; align-items: baseline; justify-content: space-between; }
+.arc__title { font-size: 40rpx; font-weight: 700; }
+.arc__count { font-size: 24rpx; color: #9CA3AF; }
+.arc__note { display: block; font-size: 22rpx; color: #9CA3AF; margin: 8rpx 0 24rpx; }
+.arc__list { display: block; }
+.arc__item { display: flex; align-items: center; background: #fff; border-radius: 24rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.arc__item-main { flex: 1; }
+.arc__item-title { display: block; font-size: 30rpx; }
+.arc__item-meta { display: block; font-size: 22rpx; color: #9CA3AF; margin-top: 6rpx; }
+.arc__del { font-size: 24rpx; color: #9CA3AF; padding: 12rpx 0 12rpx 24rpx; }
+.arc__clear { text-align: center; font-size: 24rpx; color: #9CA3AF; padding: 24rpx; }

@@ -1,0 +1,8 @@
+/* 归属 C 岗 */
+.sv { padding: 80rpx 32rpx; text-align: center; }
+.sv__title { display: block; font-size: 32rpx; color: #1F2937; margin: 16rpx 0 8rpx; }
+.sv__icon { font-size: 64rpx; line-height: 1; }
+.sv__desc { display: block; font-size: 24rpx; color: #9CA3AF; }
+.sv__btn { display: inline-block; margin-top: 32rpx; padding: 0 48rpx; line-height: 88rpx; border-radius: 16rpx; background: #FF5A3C; color: #FFFFFF; }
+.sv__spinner { width: 48rpx; height: 48rpx; margin: 0 auto; border: 4rpx solid #E5E7EB; border-top-color: #FF5A3C; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

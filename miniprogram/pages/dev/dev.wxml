@@ -1,0 +1,53 @@
+<!-- 开发自检页（不上线导航）。所有按钮只服务 A 岗排查，不进正式流程。 -->
+<view class="page dev">
+
+  <view class="dev__block">
+    <text class="dev__label">环境</text>
+    <text class="dev__value">{{envText}}</text>
+    <text class="dev__label">适配通道</text>
+    <text class="dev__value">{{adapter}}</text>
+    <text class="dev__label">大模型</text>
+    <text class="dev__value">{{llmText}}</text>
+    <text class="dev__label">今日用量</text>
+    <text class="dev__value">{{usageText}}</text>
+    <text class="dev__label">开关</text>
+    <text class="dev__value">样例 {{flags.useFixture ? 'ON' : 'off'}} · 兜底 {{flags.useFallback ? 'ON' : 'off'}} · 演示 {{flags.demoMode ? 'ON' : 'off'}} · 限额 {{flags.quota ? 'ON' : 'off'}} · 内容安全 {{flags.secCheck ? 'ON' : 'off'}}</text>
+  </view>
+
+  <view class="dev__row">
+    <view class="dev__btn tap" bindtap="onProbe">{{busy ? '调用中…' : '通道自检（打印原始返回）'}}</view>
+  </view>
+
+  <view class="dev__row">
+    <view class="dev__btn tap" bindtap="onInjectFixture">灌样例卡（看样式）</view>
+    <view class="dev__btn tap" bindtap="onToggleFixture">样例通道</view>
+    <view class="dev__btn tap" bindtap="onToggleDemo">演示模式</view>
+  </view>
+
+  <view class="dev__row">
+    <view class="dev__btn tap" bindtap="onToggleFallback">云函数兜底</view>
+    <view class="dev__btn tap" bindtap="onToggleSecCheck">内容安全</view>
+    <view class="dev__btn tap" bindtap="onResetUsage">重置次数</view>
+  </view>
+
+  <view class="dev__row">
+    <view class="dev__btn tap" bindtap="onResetCooldown">清模型冷却（回到主模型）</view>
+    <view class="dev__btn tap" bindtap="onExportMetrics">导出埋点</view>
+  </view>
+
+  <view class="dev__row">
+    <view class="dev__btn tap" bindtap="onCloudPing">云函数连通自检</view>
+    <view class="dev__btn tap" bindtap="onClearCache">清缓存</view>
+    <view class="dev__btn tap" bindtap="onClearOutput">清输出</view>
+  </view>
+
+  <view class="dev__row">
+    <view class="dev__btn tap" bindtap="onCopyOutput">复制原始返回</view>
+  </view>
+
+  <text class="dev__label">metrics 摘要</text>
+  <text class="dev__pre">{{summaryText}}</text>
+
+  <text class="dev__label">原始返回 / 输出</text>
+  <text class="dev__pre dev__pre--out" user-select="{{true}}">{{output || '点上面的「通道自检」'}}</text>
+</view>

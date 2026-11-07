@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "避坑导购",
+  "usingComponents": {
+    "type-writer": "../../components/type-writer/index"
+  }
+}

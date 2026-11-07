@@ -1,0 +1,68 @@
+<!--
+  首页结构骨架（A 出，C 精修）
+  绑定字段：rawInput / loading / stage / followup / quickTags / demoMode / usageText
+  事件：onInput / onSubmit / onQuickTag / onLogoTap / onFollowupDone / goArchive
+-->
+<view class="page idx">
+
+  <!-- 顶部：LOGO（连点 5 次进 Demo）+ 一句话定位 -->
+  <view class="idx__head" bindtap="onLogoTap">
+    <text class="idx__logo">避坑导购</text>
+    <text wx:if="{{demoMode}}" class="idx__demo">演示模式</text>
+  </view>
+  <text class="idx__slogan">学生党买东西，最怕的不是贵，是买错</text>
+
+  <!-- 追问区：打字机逐字出，出完才允许继续输入 -->
+  <view wx:if="{{followup}}" class="idx__followup">
+    <text class="idx__followup-label">学长问一句</text>
+    <type-writer text="{{followup}}" speed="35" autoplay="{{true}}" bind:done="onFollowupDone" />
+  </view>
+
+  <!-- 输入区 -->
+  <view class="idx__input-wrap">
+    <textarea
+      class="idx__input"
+      value="{{rawInput}}"
+      placeholder="想买什么？带上预算更准，例：初音手办 300 以内"
+      maxlength="200"
+      auto-height
+      disabled="{{loading}}"
+      bindinput="onInput"
+    />
+    <view class="idx__count">{{rawInput.length}}/200</view>
+  </view>
+
+  <view class="idx__submit {{loading ? 'idx__submit--disabled' : ''}} tap" bindtap="onSubmit">
+    <text wx:if="{{!loading}}">帮我避个坑</text>
+    <text wx:else>{{stage === 'judging' ? '正在判断需求…' : stage === 'merging' ? '正在整理结论…' : '正在翻避坑库…'}}</text>
+  </view>
+
+  <text wx:if="{{tip}}" class="idx__tip">{{tip}}</text>
+
+  <!-- 快捷标签 -->
+  <view class="idx__tags">
+    <text class="idx__tags-label">{{demoMode ? '照这个答我' : '试试这些'}}</text>
+    <view class="idx__tag-list">
+      <text
+        wx:for="{{quickTags}}"
+        wx:key="*this"
+        class="idx__tag tap"
+        data-tag="{{item}}"
+        bindtap="onQuickTag"
+      >{{item}}</text>
+    </view>
+  </view>
+
+  <!-- 验收入口：一键进演示模式跑完整闭环（A 加，C 可改样式/位置） -->
+  <text wx:if="{{!demoMode}}" class="idx__sample tap" bindtap="onSampleTap">没想好？看个完整示例 →</text>
+  <text wx:else class="idx__sample tap" bindtap="onSampleExit">退出演示模式</text>
+
+  <!-- 底部：档案入口 + 用量 + 版本号（长按进自检） -->
+  <view class="idx__foot">
+    <text class="idx__link" bindtap="goArchive">我的档案</text>
+    <text class="idx__usage">{{usageText}}</text>
+    <text class="idx__version" bindlongpress="onVersionLongPress">v{{version}}</text>
+  </view>
+
+  <text class="idx__disclaimer">内容由 AI 生成，仅供参考 · 不构成购买建议</text>
+</view>

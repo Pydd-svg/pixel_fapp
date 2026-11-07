@@ -1,0 +1,22 @@
+{
+  "libVersion": "3.18.0",
+  "projectname": "%E9%81%BF%E5%9D%91%E5%AF%BC%E8%B4%AD-%E9%98%9F%E5%8F%8B%E9%A2%84%E8%A7%88%E7%89%88",
+  "setting": {
+    "urlCheck": false,
+    "coverView": true,
+    "lazyloadPlaceholderEnable": false,
+    "skylineRenderEnable": false,
+    "preloadBackgroundData": false,
+    "autoAudits": false,
+    "useApiHook": true,
+    "showShadowRootInWxmlPanel": true,
+    "useStaticServer": false,
+    "useLanDebug": false,
+    "showES6CompileOption": false,
+    "compileHotReLoad": true,
+    "useGlassEaselForWxml": false,
+    "checkInvalidKey": true,
+    "ignoreDevUnusedFiles": true,
+    "bigPackageSizeSupport": false
+  }
+}

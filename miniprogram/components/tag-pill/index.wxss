@@ -1,0 +1,11 @@
+/* 归属 C 岗 */
+.pill {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 999px;
+  background: #F3F4F6;
+  color: #4B5563;
+  font-size: 22rpx;
+  margin: 0 8rpx 8rpx 0;
+}
+.pill--warn { background: #FFF1EE; color: #C2410C; }

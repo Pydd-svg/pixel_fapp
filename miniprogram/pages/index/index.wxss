@@ -1,0 +1,30 @@
+/* 首页样式占位 —— 归属 C 岗 */
+.idx { padding: 32rpx 32rpx 48rpx; }
+.idx__head { display: flex; align-items: center; }
+.idx__logo { font-size: 40rpx; font-weight: 700; }
+.idx__demo { margin-left: 16rpx; font-size: 22rpx; color: #C2410C; background: #FFF1EE; padding: 4rpx 12rpx; border-radius: 999px; }
+.idx__slogan { font-size: 26rpx; color: #6B7280; margin-top: 8rpx; }
+.idx__input-wrap { background: #fff; border-radius: 24rpx; padding: 24rpx; margin-top: 24rpx; }
+.idx__input { width: 100%; min-height: 120rpx; font-size: 30rpx; }
+.idx__count { text-align: right; font-size: 22rpx; color: #9CA3AF; }
+.idx__submit { margin-top: 24rpx; height: 92rpx; line-height: 92rpx; text-align: center; border-radius: 16rpx; background: #FF5A3C; color: #fff; font-size: 30rpx; }
+.idx__submit--disabled { opacity: 0.6; }
+.idx__tip { display: block; margin-top: 16rpx; font-size: 24rpx; color: #C2410C; }
+.idx__tag { display: inline-block; margin: 0 12rpx 12rpx 0; padding: 12rpx 20rpx; background: #F3F4F6; border-radius: 999px; font-size: 24rpx; color: #4B5563; }
+.idx__sample { display: block; margin-top: 8rpx; font-size: 24rpx; color: #C2410C; }
+
+/* 追问区 */
+.idx__followup { background: #FFF7F4; border: 1rpx solid #FFE0D6; border-radius: 20rpx; padding: 24rpx; margin-top: 24rpx; }
+.idx__followup-label { display: block; font-size: 22rpx; color: #C2410C; margin-bottom: 8rpx; }
+
+/* 快捷标签区 */
+.idx__tags { margin-top: 40rpx; }
+.idx__tags-label { display: block; font-size: 24rpx; color: #9CA3AF; margin-bottom: 16rpx; }
+.idx__tag-list { display: flex; flex-wrap: wrap; }
+
+/* 底部 */
+.idx__link { color: #4B5563; }
+.idx__usage { color: #9CA3AF; }
+.idx__version { color: #D1D5DB; }
+.idx__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 48rpx; font-size: 24rpx; color: #9CA3AF; }
+.idx__disclaimer { display: block; margin-top: 16rpx; font-size: 22rpx; color: #9CA3AF; }

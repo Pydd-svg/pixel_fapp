@@ -1,0 +1,43 @@
+/**
+ * tokens.wxss —— 设计变量唯一真源
+ * 归属：C 岗（UI）。A 岗只 @import，禁止在页面/组件里硬编码色值。
+ * 本文件当前内容为 A 岗按 v2 方案第 11 章落的最小兜底版，C 岗接手后整体覆盖。
+ */
+page {
+  /* 主色：警示橙红，契合「避坑」 */
+  --c-primary: #FF5A3C;
+  --c-primary-weak: #FFF1EE;
+  --c-primary-text: #C2410C;
+
+  /* 中性色 */
+  --c-ink: #1F2937;
+  --c-ink-2: #4B5563;
+  --c-ink-3: #6B7280;
+  --c-ink-4: #9CA3AF;
+  --c-line: #E5E7EB;
+  --c-bg: #F7F8FA;
+  --c-surface: #FFFFFF;
+  --c-chip: #F3F4F6;
+
+  /* 语义色 */
+  --c-warn: #F59E0B;
+  --c-danger: #EF4444;
+  --c-ok: #10B981;
+
+  /* 圆角（走查表第 3 条：卡 24 / 胶囊 999 / 按钮 16） */
+  --r-card: 24rpx;
+  --r-btn: 16rpx;
+  --r-pill: 999px;
+
+  /* 字号（走查表第 4 条：只许三级 40 / 28 / 24） */
+  --fs-title: 40rpx;
+  --fs-body: 28rpx;
+  --fs-aux: 24rpx;
+
+  /* 间距（走查表第 5 条：卡内 32，卡间 24） */
+  --sp-in: 32rpx;
+  --sp-gap: 24rpx;
+
+  /* 阴影 */
+  --sh-card: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}

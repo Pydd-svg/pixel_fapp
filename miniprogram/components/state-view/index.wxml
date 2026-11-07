@@ -1,0 +1,9 @@
+<view class="sv sv--{{state}}">
+  <view wx:if="{{state === 'loading'}}" class="sv__spinner"></view>
+  <view wx:else class="sv__icon">{{state === 'degraded' ? '⚠️' : state === 'demo' ? '🎬' : '🗂'}}</view>
+
+  <text class="sv__title">{{title || defaultTitle}}</text>
+  <text class="sv__desc">{{desc || defaultDesc}}</text>
+
+  <view wx:if="{{state === 'degraded' || state === 'empty'}}" class="sv__btn tap" bindtap="onRetry">重试</view>
+</view>

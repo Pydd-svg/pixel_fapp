@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "决策卡",
+  "usingComponents": {
+    "decision-card": "../../components/decision-card/index",
+    "verify-sheet": "../../components/verify-sheet/index",
+    "state-view": "../../components/state-view/index"
+  }
+}
