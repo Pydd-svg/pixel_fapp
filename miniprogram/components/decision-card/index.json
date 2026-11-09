@@ -1,7 +1,6 @@
 {
   "component": true,
   "usingComponents": {
-    "tag-pill": "../tag-pill/index",
-    "red-flag": "../red-flag/index"
+    "tag-pill": "../tag-pill/index"
   }
 }

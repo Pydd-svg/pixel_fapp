@@ -1,0 +1,194 @@
+[
+  {
+    "id": "digital_001",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "耳机",
+      "降噪",
+      "蓝牙耳机",
+      "地铁",
+      "虚标"
+    ],
+    "title": "降噪深度 dB 是实验室数字",
+    "content": "标称 40dB 以上的降噪深度是实验室单频测试值，地铁、食堂这类宽频噪音的实际衰减常打对折。判断看两点：有无通透模式与风噪抑制，是否标注宽频降噪。只堆 dB 数字的多是营销。",
+    "severity": "medium",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_002",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "耳机",
+      "延迟",
+      "编码",
+      "打游戏",
+      "蓝牙"
+    ],
+    "title": "耳机延迟看编码和游戏模式",
+    "content": "无线耳机的延迟取决于编码：SBC 最高，AAC 居中，LDAC 音质好但延迟高。打游戏要开低延迟或游戏模式，通常能压到 60ms 以内。买前确认手机支持的编码，苹果只有 AAC，LDAC 用不上。",
+    "severity": "medium",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_003",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "耳机",
+      "百元",
+      "性价比",
+      "麦克风",
+      "音质"
+    ],
+    "title": "百元与三百元的真实差距",
+    "content": "差价主要落在三处：腔体与振膜决定低频下潜，调音决定人声是否刺耳，麦克风底噪决定通话能不能听清。百元档通常只能保住其中一项。通话多的人优先看麦克风，别只看音质评测。",
+    "severity": "low",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_004",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "二手",
+      "耳机",
+      "电池",
+      "耳罩",
+      "续航"
+    ],
+    "title": "二手耳机先问三件事",
+    "content": "耳机是贴身物品，二手要问清楚：耳罩能否更换，不可换的直接放弃；电池循环与续航实测多少；官方是否支持付费换电池。换电池成本接近新机一半时，二手的性价比就不成立了。",
+    "severity": "medium",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_005",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "充电宝",
+      "容量",
+      "额定",
+      "充电",
+      "能充几次"
+    ],
+    "title": "mAh 是电芯容量，不是能充几次",
+    "content": "标称 10000mAh 是电芯容量，经过升压损耗后额定容量通常只有 5500-6500mAh。用额定容量除以手机电池容量，才是真实可充次数。参数页不写额定容量的，按标称的六折估算。",
+    "severity": "high",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_006",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "充电宝",
+      "3C",
+      "认证",
+      "安检",
+      "安全"
+    ],
+    "title": "充电宝必须有 3C 标识",
+    "content": "充电宝属于强制认证产品，机身或包装必须有 3C 标志和可查的证书编号。没有 3C 的不只过不了机场安检，电芯质量也无从追溯。到手先看机身丝印，再看编号能否在认证平台查到。",
+    "severity": "high",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_007",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "快充",
+      "协议",
+      "PD",
+      "充电头",
+      "功率"
+    ],
+    "title": "协议不匹配，65W 只跑 18W",
+    "content": "快充靠协议握手，PD、QC 与各家私有协议互不通用。充电头标 65W，手机只认 18W 协议时通常只能跑 18W。买前对齐三件事：手机支持什么协议、充电头支持什么协议、线材是否支持对应电流。",
+    "severity": "medium",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_008",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "充电头",
+      "多口",
+      "功率",
+      "分配",
+      "快充"
+    ],
+    "title": "多口充电头的总功率陷阱",
+    "content": "标称 65W 的多口充电头，插满后常变成 45W+18W 甚至 30W+30W，单口再也跑不到 65W。要同时给笔记本和手机快充，得看单口最大输出和多口分配表，两个都写在参数页才可信。",
+    "severity": "medium",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_009",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "U盘",
+      "扩容",
+      "假货",
+      "容量",
+      "校验"
+    ],
+    "title": "U 盘容量可能是改出来的",
+    "content": "低价大容量 U 盘有改容量固件的，标 1T 实际只有几十 G，写满后文件直接损坏。到手先用测容工具做一次全盘写入校验，写入速度出现断崖式下跌或报错即为扩容盘。别等存了资料才发现。",
+    "severity": "high",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_010",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "移动固态",
+      "QLC",
+      "TLC",
+      "掉速",
+      "U盘"
+    ],
+    "title": "移动固态看颗粒，不只看速度",
+    "content": "厂商标的是缓内速度，QLC 颗粒缓外写入会掉到几十 MB/s，拷几十 G 素材时比机械盘还慢。判断看两点：是否标明 TLC、有无独立缓存。只写读速而不提写入速度与颗粒的，按 QLC 对待。",
+    "severity": "medium",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_011",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "存储",
+      "颗粒",
+      "白片",
+      "便宜",
+      "掉盘"
+    ],
+    "title": "价格异常低的存储颗粒",
+    "content": "同容量存储比主流品牌便宜四成以上，多半用了降级片或白片：容量可能达标，但坏块率高、寿命短、有掉盘风险。存储是唯一不建议省钱的配件，因为数据丢失的代价远高于那点差价。",
+    "severity": "high",
+    "updated_at": "2026-11-07"
+  },
+  {
+    "id": "digital_012",
+    "scope": "category",
+    "category": "digital",
+    "keywords": [
+      "数据线",
+      "线材",
+      "充电",
+      "功率",
+      "读卡器"
+    ],
+    "title": "线材不对，充电就是慢",
+    "content": "同样标 USB-C 的线，有的只走充电不走数据，有的只支持 60W 不支持 100W，还有的内阻大导致实际功率受限或发热降速。买线看三个标注：功率档位、数据速率、是否支持视频输出，缺一项按最低配理解。",
+    "severity": "low",
+    "updated_at": "2026-11-07"
+  }
+]

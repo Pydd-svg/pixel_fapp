@@ -1,1 +1,1 @@
-<view class="pill pill--{{type}}">{{text}}</view>
+<text class="tp-root tp-{{type}}">{{text}}</text>

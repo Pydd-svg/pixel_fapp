@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DecisionCard",
+  "description": "决策卡对外契约（契约 §4.1）。运行时以 miniprogram/services/schema.js 为准。",
+  "type": "object",
+  "required": ["status", "error_code", "is_followup", "followup_question", "decision_data"],
+  "properties": {
+    "status": { "enum": ["success", "degraded", "error"] },
+    "error_code": { "type": ["string", "null"] },
+    "is_followup": { "type": "boolean" },
+    "followup_question": { "type": "string", "maxLength": 60 },
+    "decision_data": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/definitions/decisionData" }
+      ]
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "elapsed_ms": { "type": "number", "minimum": 0 },
+        "channel": { "type": "string" },
+        "cache_hit": { "type": "boolean" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "is_followup": { "const": true } } },
+      "then": {
+        "properties": {
+          "decision_data": { "type": "null" },
+          "followup_question": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    {
+      "if": { "properties": { "status": { "const": "success" } } },
+      "then": { "properties": { "error_code": { "type": "null" } } }
+    },
+    {
+      "if": { "properties": { "status": { "enum": ["degraded", "error"] } } },
+      "then": { "properties": { "error_code": { "type": "string", "minLength": 1 } } }
+    }
+  ],
+  "definitions": {
+    "recommendation": {
+      "type": "object",
+      "required": ["type", "name", "price_expectation", "pros", "cons"],
+      "properties": {
+        "type": { "type": "string" },
+        "name": { "type": "string", "maxLength": 24 },
+        "price_expectation": {
+          "type": ["string", "null"],
+          "description": "有可靠来源时才写「数字-数字元」区间；price_source=null 时必须为空字符串或 null",
+          "anyOf": [
+            { "const": "" },
+            { "const": null },
+            { "type": "string", "pattern": "\\d+(?:\\.\\d+)?-\\d+(?:\\.\\d+)?元" }
+          ]
+        },
+        "pros": { "type": "string", "maxLength": 40 },
+        "cons": { "type": "string", "maxLength": 40 }
+      }
+    },
+    "decisionData": {
+      "type": "object",
+      "required": [
+        "card_title", "category", "budget_band", "tags", "price_source", "price_note",
+        "entity_status", "unverified_entities", "recommendations",
+        "red_flags", "search_keyword", "knowledge_refs", "confidence", "disclaimer"
+      ],
+      "properties": {
+        "card_title": { "type": "string", "maxLength": 20 },
+        "category": {
+          "enum": ["laptop", "digital", "chao_wan", "beauty", "bed", "study", "universal"]
+        },
+        "budget_band": { "type": "string" },
+        "price_source": {
+          "enum": ["kb", "web", null],
+          "description": "价格来源：知识库数字 / 联网报价 / 无可靠来源"
+        },
+        "price_note": { "type": "string", "maxLength": 60 },
+        "entity_status": {
+          "enum": ["verified", "partial", "unknown"],
+          "description": "具体商品是否核实存在；unknown 时只给品类通用建议"
+        },
+        "unverified_entities": {
+          "type": "array",
+          "maxItems": 3,
+          "items": { "type": "string", "maxLength": 16 }
+        },
+        "tags": {
+          "type": "array",
+          "maxItems": 4,
+          "items": { "type": "string", "maxLength": 8 }
+        },
+        "recommendations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": { "$ref": "#/definitions/recommendation" }
+        },
+        "red_flags": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "type": "string", "maxLength": 40 }
+        },
+        "search_keyword": {
+          "type": "string",
+          "maxLength": 30,
+          "not": { "pattern": "https?://|www\\." }
+        },
+        "knowledge_refs": {
+          "type": "array",
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "pattern": "^(laptop|digital|chao_wan|beauty|bed|study|cross)_\\d{3}$"
+          }
+        },
+        "confidence": { "enum": ["high", "medium", "low"] },
+        "disclaimer": { "type": "string" }
+      }
+    }
+  }
+}

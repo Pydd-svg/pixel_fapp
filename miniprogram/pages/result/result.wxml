@@ -1,39 +1,15 @@
-<!-- 结果页结构骨架（A 出，C 精修） -->
-<view class="page res">
+<view class="page-result">
+  <view wx:if="{{demoMode}}" class="res-demo-bar">演示模式 · 数据为预置样例</view>
 
-  <!-- 降级提示：明确告知，不伪装成正常结果 -->
-  <view wx:if="{{state === 'degraded'}}" class="res__degrade">
-    <text class="res__degrade-text">{{errorText || '这次没答好，先给你通用建议'}}</text>
-    <text class="res__degrade-retry" bindtap="onStateRetry">重试</text>
-  </view>
+  <decision-card wx:if="{{state !== 'empty'}}" card="{{card}}" state="{{state}}" showRefs="{{showRefs}}"
+    error-code="{{errorCode}}" error-text="{{errorText}}" error-detail="{{errorDetail}}"
+    ext-class="{{readonly ? 'dc-readonly' : ''}}"
+    bind:copykeyword="onCopyKeyword" bind:verify="onVerify" bind:save="onSave"
+    bind:share="onShare" bind:report="onReport" bind:retry="onRetry" />
 
-  <!-- 决策卡 -->
-  <decision-card
-    wx:if="{{state === 'done' || state === 'degraded' || state === 'loading'}}"
-    card="{{card}}"
-    state="{{state}}"
-    showRefs="{{showRefs}}"
-    bind:copykeyword="onCopyKeyword"
-    bind:verify="onVerify"
-    bind:save="onSave"
-    bind:share="onShare"
-    bind:report="onReport"
-  />
+  <state-view wx:else state="empty" title="还没有决策卡" desc="回到首页问一句，就会生成"
+    bind:retry="onRetry" />
 
-  <!-- 空态 -->
-  <state-view
-    wx:if="{{state === 'empty'}}"
-    state="empty"
-    title="没有拿到卡片"
-    desc="回首页重新描述一次需求就行"
-    bind:retry="onStateRetry"
-  />
-
-  <!-- 查证半屏面板 -->
-  <verify-sheet
-    visible="{{verifyVisible}}"
-    data="{{verifyData}}"
-    state="{{verifyState}}"
-    bind:close="onCloseVerify"
-  />
+  <verify-sheet visible="{{verifyVisible}}" data="{{verifyData}}" state="{{verifyState}}"
+    bind:close="onCloseVerify" />
 </view>

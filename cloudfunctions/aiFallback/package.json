@@ -1,0 +1,9 @@
+{
+  "name": "aiFallback",
+  "version": "1.0.0",
+  "description": "避坑导购唯一后端：内容安全 + 大模型兜底通道",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3"
+  }
+}

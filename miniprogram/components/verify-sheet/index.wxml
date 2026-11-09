@@ -1,52 +1,21 @@
-<!-- 查证半屏面板：蒙层 + 底部面板，结构归 A，视觉归 C -->
-<view wx:if="{{visible}}" class="vs" catchtouchmove="noop">
-  <view class="vs__mask" bindtap="onClose"></view>
-
-  <view class="vs__panel">
-    <view class="vs__handle"></view>
-
-    <view class="vs__head">
-      <text class="vs__title">全网真实评测</text>
-      <text class="vs__close" bindtap="onClose">关闭</text>
+<view wx:if="{{visible}}" class="vs-mask" bindtap="onClose">
+  <view class="vs-panel" catchtap="noop">
+    <view class="vs-handle"></view>
+    <view class="vs-head">
+      <text class="vs-title">全网真实口碑</text>
+      <text class="vs-close" bindtap="onClose">关闭</text>
     </view>
 
-    <!-- loading -->
-    <view wx:if="{{state === 'loading'}}" class="vs__loading">
-      <view class="vs__spinner"></view>
-      <text class="vs__loading-text">正在检索全网口碑…</text>
-    </view>
-
-    <!-- 有结果 -->
-    <block wx:elif="{{state === 'done' || state === 'empty'}}">
-      <view class="vs__verdict">
-        <text class="vs__verdict-label">近期结论</text>
-        <text class="vs__verdict-text">{{verdict}}</text>
+    <view wx:if="{{state === 'loading'}}" class="vs-loading">正在检索全网口碑…</view>
+    <view wx:elif="{{state === 'degraded'}}" class="vs-tip">当前检索繁忙，先看基础决策</view>
+    <view wx:elif="{{state === 'empty'}}" class="vs-tip">暂未检索到有效口碑，换基础决策看看</view>
+    <view wx:else class="vs-body">
+      <view class="vs-verdict">{{summary.recent_verdict}}</view>
+      <view wx:for="{{feedback}}" wx:key="*this" class="vs-feedback">· {{item}}</view>
+      <view wx:if="{{summary.caution_alert}}" class="vs-caution">注意：{{summary.caution_alert}}</view>
+      <view wx:if="{{sources.length}}" class="vs-sources">
+        来源：<text wx:for="{{sources}}" wx:key="*this" class="vs-source">{{item}}</text>
       </view>
-
-      <view wx:if="{{feedback.length}}" class="vs__list">
-        <view wx:for="{{feedback}}" wx:key="*this" class="vs__item">
-          <text class="vs__dot">·</text>
-          <text class="vs__item-text">{{item}}</text>
-        </view>
-      </view>
-
-      <view wx:if="{{caution}}" class="vs__caution">
-        <text class="vs__caution-icon">⚠️</text>
-        <text class="vs__caution-text">{{caution}}</text>
-      </view>
-
-      <view wx:if="{{sources.length}}" class="vs__sources">
-        <text class="vs__sources-label">来源类型</text>
-        <text wx:for="{{sources}}" wx:key="*this" class="vs__source">{{item}}</text>
-      </view>
-
-      <text class="vs__note">AI 检索汇总，不含价格与购买链接 · 仅供参考</text>
-    </block>
-
-    <!-- 降级 -->
-    <view wx:else class="vs__loading">
-      <text class="vs__loading-text">{{state === 'degraded' ? '当前检索繁忙，先看基础决策' : '检索出了点问题，稍后再试'}}</text>
-      <view class="vs__retry tap" bindtap="onClose">知道了</view>
     </view>
   </view>
 </view>

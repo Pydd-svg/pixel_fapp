@@ -1,6 +1,8 @@
 {
   "navigationBarTitleText": "避坑导购",
   "usingComponents": {
-    "type-writer": "../../components/type-writer/index"
+    "tag-pill": "/components/tag-pill/index",
+    "type-writer": "/components/type-writer/index",
+    "state-view": "/components/state-view/index"
   }
 }

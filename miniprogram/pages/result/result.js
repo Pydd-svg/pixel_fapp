@@ -22,6 +22,8 @@ Page({
     verifyData: null,
     verifyState: 'loading',
     errorText: '',
+    errorCode: '',
+    errorDetail: '',
     demoMode: false
   },
 
@@ -55,7 +57,9 @@ Page({
       card: dd,
       status: card.status || 'success',
       state,
-      errorText: card.error_code ? C.ERROR_TEXT[card.error_code] || '' : ''
+      errorText: card.error_code ? C.ERROR_TEXT[card.error_code] || '' : '',
+      errorCode: card.error_code || '',
+      errorDetail: ((card.meta && card.meta.error_message) || '').slice(0, 160)
     });
     if (dd && dd.card_title) wx.setNavigationBarTitle({ title: dd.card_title });
   },

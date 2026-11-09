@@ -4,6 +4,9 @@
  * 隐私叙事：所有数据只在端上，云端不留原始输入（v2 §4.3-③）。
  */
 const storage = require('../../services/storage');
+const C = require('../../services/constants');
+
+const CONF_LABEL = { high: '高置信', medium: '中置信', low: '低置信' };
 
 function fmt(ts) {
   const d = new Date(ts);
@@ -28,7 +31,9 @@ Page({
       id: x.id,
       title: x.title,
       category: x.category,
+      categoryLabel: C.CATEGORY_LABEL[x.category] || x.category || '通用',
       confidence: x.confidence,
+      confidenceLabel: CONF_LABEL[x.confidence] || '未标注',
       status: x.status,
       tsText: fmt(x.ts)
     }));

@@ -1,98 +1,77 @@
-<!--
-  decision-card 结构骨架
-  归属：A 出初版，C 精修。C 可加 class / 改文案，但不得改字段名与 bind: 事件名。
-  区块顺序按契约 §6.2 第 5 条：标题 → 标签 → 方案 → 红线 → 搜索词 → 依据 → AI 标识
--->
-<view class="dc dc--{{state}}">
+<view class="dc-root ext-class">
+  <view wx:if="{{state === 'loading'}}" class="dc-skeleton">
+    <view class="dc-sk-line dc-sk-title"></view>
+    <view class="dc-sk-line"></view>
+    <view class="dc-sk-block"></view>
+    <view class="dc-sk-block"></view>
+  </view>
 
-  <!-- ① loading：骨架屏，不许留白 -->
-  <block wx:if="{{state === 'loading'}}">
-    <view class="dc__sk-title sk"></view>
-    <view class="dc__sk-line sk"></view>
-    <view class="dc__sk-line sk"></view>
-    <view class="dc__sk-block sk"></view>
-  </block>
+  <view wx:elif="{{state === 'degraded'}}" class="dc-degraded">
+    <view class="dc-degraded-title">! AI 开小差了</view>
+    <view class="dc-degraded-desc">先把三条不会错的通用建议给你</view>
+    <view wx:if="{{errorCode}}" class="dc-degraded-code">错误码 {{errorCode}}<text wx:if="{{errorText}}"> · {{errorText}}</text></view>
+    <view wx:if="{{errorDetail}}" class="dc-degraded-detail">{{errorDetail}}</view>
+    <view wx:for="{{fallbackFlags}}" wx:key="*this" class="dc-degraded-line">{{index + 1}}. {{item}}</view>
+    <button class="dc-retry" hover-class="is-pressed" hover-stay-time="80" bindtap="onRetry">再试一次</button>
+  </view>
 
-  <block wx:else>
-    <!-- ② 降级提示条（不是错误页，卡仍可用） -->
-    <view wx:if="{{state === 'degraded'}}" class="dc__degrade">
-      <text class="dc__degrade-text">这条是通用建议，AI 这次没答好</text>
+  <view wx:elif="{{state === 'empty' || !card}}" class="dc-empty">还没有决策卡</view>
+
+  <view wx:else class="dc-card">
+    <view class="dc-head">
+      <text class="dc-title">{{card.card_title}}</text>
+      <text wx:if="{{confidenceLabel}}" class="dc-badge {{confidenceClass}}">{{confidenceLabel}}</text>
+    </view>
+    <view class="dc-tags">
+      <text wx:for="{{card.tags}}" wx:key="*this" class="dc-tag">{{item}}</text>
     </view>
 
-    <!-- ③ 标题 + 元信息 -->
-    <view class="dc__head">
-      <text class="dc__title">{{card.card_title}}</text>
-      <view class="dc__meta">
-        <text wx:if="{{confText}}" class="dc__conf dc__conf--{{card.confidence}}">置信度 {{confText}}</text>
-        <text wx:if="{{card.budget_band && card.budget_band !== '未指定'}}" class="dc__budget">预算 {{card.budget_band}}</text>
+    <view wx:if="{{entityUnknown}}" class="dc-unverified">
+      未核实到「{{entityText}}」的官方商品信息，以下为{{categoryLabel}}通用避坑建议
+    </view>
+
+    <view wx:for="{{card.recommendations}}" wx:key="type" class="dc-rec dc-rec-{{index}}">
+      <text class="dc-rec-type">{{item.type}}</text>
+      <view class="dc-rec-name">{{item.name}}</view>
+      <view class="dc-rec-price">{{item.price_expectation || '暂无可靠报价'}}</view>
+      <view class="dc-rec-line {{expanded[index] ? '' : 'dc-clamp'}}" data-idx="{{index}}"
+        hover-class="is-pressed" hover-stay-time="80" bindtap="onTogglePros">优点：{{item.pros}}</view>
+      <view class="dc-rec-line {{expanded[index] ? '' : 'dc-clamp'}}" data-idx="{{index}}"
+        hover-class="is-pressed" hover-stay-time="80" bindtap="onTogglePros">代价：{{item.cons}}</view>
+    </view>
+
+    <view wx:if="{{priceNote}}" class="dc-price-note">{{priceNote}}</view>
+
+    <view class="dc-flags">
+      <view class="dc-flags-title"><text class="dc-flag-icon">!</text> 避坑红线</view>
+      <view wx:for="{{card.red_flags}}" wx:key="*this" class="dc-flag">· {{item}}</view>
+    </view>
+
+    <view class="dc-keyword">
+      <view class="dc-keyword-label">搜索词</view>
+      <view class="dc-keyword-row">
+        <text class="dc-keyword-text">{{card.search_keyword}}</text>
+        <button class="dc-copy" hover-class="is-pressed" hover-stay-time="80" bindtap="onCopyKeyword">复制</button>
       </view>
     </view>
 
-    <!-- ④ 标签 -->
-    <view wx:if="{{hasTags}}" class="dc__tags">
-      <tag-pill
-        wx:for="{{card.tags}}"
-        wx:key="*this"
-        text="{{item}}"
-        type="default"
-      />
+    <view wx:if="{{showRefs && refsList.length}}" class="dc-refs">
+      <text class="dc-refs-label">依据（点开看原文）：</text>
+      <text wx:for="{{refsList}}" wx:key="*this" class="dc-ref" data-id="{{item}}" bindtap="onRefTap">{{item}}</text>
+    </view>
+    <view wx:if="{{showRefs && state === 'done' && !refsList.length}}" class="dc-refs dc-refs-empty">
+      暂无该品类的可靠知识条目，以下为通用建议
     </view>
 
-    <!-- ⑤ 推荐方案 -->
-    <view class="dc__section">
-      <text class="dc__section-title">买什么</text>
-      <view wx:for="{{recs}}" wx:key="name" class="dc__rec">
-        <view class="dc__rec-head">
-          <text class="dc__rec-type">{{item.type}}</text>
-          <text class="dc__rec-name">{{item.name}}</text>
-        </view>
-        <text class="dc__rec-price">{{item.price_expectation}}</text>
-        <view class="dc__rec-row">
-          <text class="dc__rec-label">优点</text>
-          <text class="dc__rec-text">{{item.pros}}</text>
-        </view>
-        <view class="dc__rec-row">
-          <text class="dc__rec-label">注意</text>
-          <text class="dc__rec-text dc__rec-text--cons">{{item.cons}}</text>
-        </view>
-      </view>
-    </view>
+    <view class="dc-disclaimer">{{card.disclaimer}}</view>
+  </view>
 
-    <!-- ⑥ 避坑红线（产品核心价值，C 按走查表第 2 条做，不要正红大色块） -->
-    <view class="dc__section">
-      <text class="dc__section-title">别碰什么</text>
-      <red-flag items="{{flags}}" />
+  <view wx:if="{{state === 'done'}}" class="dc-actions">
+    <button class="dc-btn-primary" hover-class="is-pressed" hover-stay-time="80" bindtap="onVerify">查全网真实评测</button>
+    <view class="dc-btn-row">
+      <button class="dc-btn-ghost" hover-class="is-pressed" hover-stay-time="80" bindtap="onSave">保存</button>
+      <button class="dc-btn-ghost" hover-class="is-pressed" hover-stay-time="80" open-type="share" bindtap="onShare">转发</button>
+      <button class="dc-btn-ghost" hover-class="is-pressed" hover-stay-time="80" bindtap="onReport">举报</button>
     </view>
-
-    <!-- ⑦ 搜索词 -->
-    <view class="dc__kw">
-      <view class="dc__kw-main" bindtap="onCopy" data-role="copy">
-        <text class="dc__kw-label">去搜这个</text>
-        <text class="dc__kw-text">{{card.search_keyword}}</text>
-      </view>
-      <view class="dc__kw-copy tap" bindtap="onCopy">复制</view>
-    </view>
-
-    <!-- ⑧ 依据条目（RAG 溯源，答辩杀手锏） -->
-    <view wx:if="{{showRefs && refs.length}}" class="dc__refs">
-      <text class="dc__refs-label">依据</text>
-      <text wx:for="{{refs}}" wx:key="*this" class="dc__ref">{{item}}</text>
-    </view>
-
-    <!-- ⑨ 操作区 -->
-    <view class="dc__actions">
-      <view class="dc__btn dc__btn--primary tap" bindtap="onVerify">查全网真实评测</view>
-      <view class="dc__btn tap" bindtap="onSave">保存</view>
-      <button class="dc__btn dc__btn--plain" open-type="share" bindtap="onShare">转发</button>
-    </view>
-
-    <!-- ⑩ AI 标识（合规必填，走查表第 6 条） -->
-    <view class="dc__foot">
-      <text class="dc__disclaimer">{{card.disclaimer}}</text>
-      <view class="dc__report">
-        <text class="dc__report-item" bindtap="onReport" data-reason="wrong">不准</text>
-        <text class="dc__report-item" bindtap="onReport" data-reason="outdated">过时</text>
-      </view>
-    </view>
-  </block>
+  </view>
 </view>

@@ -1,5 +1,4 @@
-/* 结果页样式占位 —— 归属 C 岗 */
-.res { padding: 24rpx; }
-.res__degrade { display: flex; align-items: center; justify-content: space-between; background: #FFF7ED; border-radius: 12rpx; padding: 16rpx 20rpx; margin-bottom: 16rpx; }
-.res__degrade-text { font-size: 24rpx; color: #C2410C; flex: 1; }
-.res__degrade-retry { font-size: 24rpx; color: #C2410C; text-decoration: underline; padding-left: 16rpx; }
+/* 结果页：给决策卡留出奶油底呼吸空间 */
+.page-result { min-height: 100vh; box-sizing: border-box; padding: var(--sp-card) var(--sp-card) var(--sp-lg); }
+.res-demo-bar { background: var(--c-warn-weak); color: var(--c-warn); font-size: var(--fs-hint); font-weight: 600; text-align: center; padding: var(--sp-sm); border-radius: var(--r-btn); margin-bottom: var(--sp-gap); animation: bk-fade var(--motion-base) var(--ease-out) both; }
+.dc-readonly .dc-actions { display: none; }

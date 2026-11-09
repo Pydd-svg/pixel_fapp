@@ -172,8 +172,7 @@ Page({
         'baseUrl：' + (d.baseUrl || '-'),
         '模型：' + (d.model || '-'),
         '降级链：' + (d.fallback || '-'),
-        'Key 已配置：' + (d.keyReady ? '是 ✅' : '否 ❌ 去云开发控制台配 LLM_API_KEY'),
-        '思考链：' + (d.thinking || '-')
+        'Key 已配置：' + (d.keyReady ? '是 ✅' : '否 ❌ 去云开发控制台配 LLM_API_KEY')
       ];
       this.setData({ output: lines.join('\n') });
       wx.showToast({ title: d.keyReady ? '云函数正常' : '还差 LLM_API_KEY', icon: 'none' });

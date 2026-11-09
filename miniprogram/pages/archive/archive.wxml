@@ -1,21 +1,26 @@
-<view class="page arc">
-  <view class="arc__head">
-    <text class="arc__title">我的档案</text>
-    <text class="arc__count">{{count}}/{{max}}</text>
-  </view>
-  <text class="arc__note">只存在本机，云端不留原始输入</text>
-
-  <state-view wx:if="{{empty}}" state="empty" title="还没有保存过卡片" desc="出卡后点【保存】就会出现在这里" bind:retry="goHome" />
-
-  <view wx:else class="arc__list">
-    <view wx:for="{{list}}" wx:key="id" class="arc__item tap" data-id="{{item.id}}" bindtap="onOpen">
-      <view class="arc__item-main">
-        <text class="arc__item-title">{{item.title}}</text>
-        <text class="arc__item-meta">{{item.tsText}} · {{item.category}} · 置信度{{item.confidence === 'high' ? '高' : item.confidence === 'medium' ? '中' : '低'}}</text>
-      </view>
-      <text class="arc__del" data-id="{{item.id}}" catchtap="onDelete">删除</text>
+<view class="page-archive">
+  <view class="ar-head">
+    <view class="ar-head-row">
+      <text class="ar-head-title">我的档案</text>
+      <text class="ar-head-count">{{count}}<text class="ar-head-max">/{{max}}</text></text>
     </view>
+    <text class="ar-head-note">只存在本机，云端不留原始输入</text>
+  </view>
 
-    <view class="arc__clear tap" bindtap="onClear">清空档案</view>
+  <view wx:if="{{empty}}" class="ar-empty">
+    <state-view state="empty" title="还没有保存过决策卡" desc="出卡后点【保存】就会出现在这里" bind:retry="goHome" />
+  </view>
+
+  <view wx:else class="ar-list">
+    <view wx:for="{{list}}" wx:key="id" class="ar-item" data-id="{{item.id}}"
+      hover-class="is-pressed" hover-stay-time="80" bindtap="onOpen" bindlongpress="onDelete">
+      <view class="ar-item-top">
+        <text class="ar-title">{{item.title}}</text>
+        <text class="ar-del" data-id="{{item.id}}" catchtap="onDelete">删除</text>
+      </view>
+      <view class="ar-meta">{{item.tsText}} · {{item.categoryLabel}} · {{item.confidenceLabel}}</view>
+    </view>
+    <view class="ar-hint">长按卡片也可删除 · 最多保留 {{max}} 条</view>
+    <view class="ar-clear" hover-class="is-pressed" hover-stay-time="80" bindtap="onClear">清空档案</view>
   </view>
 </view>

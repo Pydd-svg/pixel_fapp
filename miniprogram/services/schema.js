@@ -59,6 +59,11 @@ function containsUrl(text) {
   return URL_RE.test(String(text || ''));
 }
 
+function hasAnyPrice(recs) {
+  if (!Array.isArray(recs)) return false;
+  return recs.some((r) => !!str(r && r.price_expectation));
+}
+
 /** 按句剥掉含价格/链接的片段（用于 recent_verdict、caution_alert 这类长句字段） */
 function stripRiskySegments(text, fallback) {
   const s = str(text);
@@ -100,7 +105,7 @@ function normalizePrice(v) {
   return str(v); // 保持原样，交给 validate 判废
 }
 
-function normalizeRecommendations(v, errors) {
+function normalizeRecommendations(v, errors, priceSource) {
   if (!Array.isArray(v)) {
     errors.push('recommendations 不是数组');
     return [];
@@ -113,7 +118,8 @@ function normalizeRecommendations(v, errors) {
       return {
         type,
         name: clamp(str(r.name), 24),
-        price_expectation: normalizePrice(r.price_expectation),
+        // 没有可靠价格来源时一律清空，前端显示「暂无可靠报价」
+        price_expectation: priceSource ? normalizePrice(r.price_expectation) : '',
         pros: clamp(str(r.pros), L.PROS),
         cons: clamp(str(r.cons), L.CONS)
       };
@@ -149,11 +155,40 @@ function normalizeRefs(v) {
   return uniq(out).slice(0, L.REFS_COUNT);
 }
 
+function normalizeEntities(v) {
+  if (!Array.isArray(v)) return [];
+  return uniq(
+    v
+      .map((x) => clamp(str(x), 16))
+      .filter(Boolean)
+  ).slice(0, 3);
+}
+
 function normalizeDecisionData(raw, errors) {
   if (!isObj(raw)) return null;
   const category = C.CATEGORY.indexOf(str(raw.category)) !== -1 ? str(raw.category) : 'universal';
+
+  // 价格来源：只有 kb / web 才算有来源，其余（含 null、"null"、缺失）一律视为没有
+  let priceSource = str(raw.price_source).toLowerCase();
+  if (priceSource !== 'kb' && priceSource !== 'web') priceSource = '';
+  let priceNote = clamp(str(raw.price_note), 60);
+  if (!priceSource) {
+    priceNote = priceNote || '知识库与联网搜索均未获得该商品的实际报价，请以下单页价格为准';
+  }
+
+  // 实体核实：unknown 必须带具体名称，否则降级为 partial，避免空提示
+  let entityStatus = str(raw.entity_status);
+  if (['verified', 'partial', 'unknown'].indexOf(entityStatus) === -1) entityStatus = 'partial';
+  const entities = normalizeEntities(raw.unverified_entities);
+  if (entityStatus === 'unknown' && !entities.length) entityStatus = 'partial';
+  // 具体商品都没核实到，就不能挂任何具体价格
+  if (entityStatus === 'unknown') {
+    priceSource = '';
+    priceNote = '未核实到该商品，暂无可靠报价';
+  }
+
   const refs = normalizeRefs(raw.knowledge_refs);
-  const recs = normalizeRecommendations(raw.recommendations, errors);
+  const recs = normalizeRecommendations(raw.recommendations, errors, priceSource);
   let confidence = C.CONFIDENCE.indexOf(str(raw.confidence)) !== -1 ? str(raw.confidence) : 'medium';
   if (!refs.length) confidence = 'low'; // 契约 §4.1 硬约束
 
@@ -162,6 +197,10 @@ function normalizeDecisionData(raw, errors) {
     category,
     budget_band: normalizeBudgetBand(raw.budget_band),
     tags: normalizeTags(raw.tags),
+    price_source: priceSource || null,
+    price_note: priceNote,
+    entity_status: entityStatus,
+    unverified_entities: entities,
     recommendations: recs,
     red_flags: normalizeRedFlags(raw.red_flags),
     search_keyword: normalizeKeyword(raw.search_keyword, category),
@@ -226,7 +265,8 @@ function normalizeDecisionCard(raw) {
   };
 
   // 归一化后再跑一次完整校验，判废条件一处收口
-  const v = validateDecisionCard(card);
+  // 降级卡是本地模板，price_expectation 写「不限价位」，不做区间硬校验
+  const v = validateDecisionCard(card, { skipPriceCheck: status === 'degraded' });
   if (!v.ok) {
     return { ok: false, card: null, errors: v.errors.concat(errors) };
   }
@@ -270,6 +310,26 @@ function validateDecisionCard(card, opts) {
     if (countChars(t) > L.TAG) errors.push('tag 超过 ' + L.TAG + ' 字：' + t);
   });
 
+  // 价格纪律：price_source=null 时必须没有任何价格；有来源时才校验区间
+  if (!(d.price_source === null || d.price_source === 'kb' || d.price_source === 'web')) {
+    errors.push('price_source 必须是 kb / web / null');
+  }
+  if (d.price_source === null && hasAnyPrice(d.recommendations)) {
+    errors.push('price_source=null 时 price_expectation 必须为空');
+  }
+
+  if (['verified', 'partial', 'unknown'].indexOf(d.entity_status) === -1) errors.push('entity_status 非法');
+  if (!Array.isArray(d.unverified_entities) || d.unverified_entities.length > 3) {
+    errors.push('unverified_entities 必须是 0-3 个');
+  } else {
+    d.unverified_entities.forEach((x) => {
+      if (countChars(x) > 16) errors.push('unverified_entity 超过 16 字：' + x);
+    });
+    if (d.entity_status === 'unknown' && !d.unverified_entities.length) {
+      errors.push('entity_status=unknown 时 unverified_entities 至少 1 个');
+    }
+  }
+
   if (!Array.isArray(d.recommendations) || d.recommendations.length < 1 || d.recommendations.length > L.REC_COUNT) {
     errors.push('recommendations 必须是 1-' + L.REC_COUNT + ' 项');
   } else {
@@ -277,7 +337,7 @@ function validateDecisionCard(card, opts) {
       const at = 'recommendations[' + i + ']';
       if (C.REC_TYPE.indexOf(r.type) === -1) errors.push(at + '.type 非法');
       if (!str(r.name)) errors.push(at + '.name 缺失');
-      if (!options.skipPriceCheck) {
+      if (!options.skipPriceCheck && d.price_source !== null) {
         const p = str(r.price_expectation);
         const m = p.match(/(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)元/);
         if (!m) errors.push(at + '.price_expectation 必须是区间（含 - 与 元）');
@@ -341,6 +401,10 @@ function buildDegradedCard(errorCode, opts) {
       category: 'universal',
       budget_band: '未指定',
       tags: ['通用建议', '非实时结论'],
+      price_source: null,
+      price_note: '通用建议，没有可核实的价格来源',
+      entity_status: 'partial',
+      unverified_entities: [],
       recommendations: [
         {
           type: '首选方案',

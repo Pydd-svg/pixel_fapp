@@ -1,68 +1,149 @@
-<!--
-  首页结构骨架（A 出，C 精修）
-  绑定字段：rawInput / loading / stage / followup / quickTags / demoMode / usageText
-  事件：onInput / onSubmit / onQuickTag / onLogoTap / onFollowupDone / goArchive
--->
-<view class="page idx">
+<view class="page-index">
+  <view wx:if="{{demoMode}}" class="idx-demo-bar">演示模式 · 数据为预置样例</view>
 
-  <!-- 顶部：LOGO（连点 5 次进 Demo）+ 一句话定位 -->
-  <view class="idx__head" bindtap="onLogoTap">
-    <text class="idx__logo">避坑导购</text>
-    <text wx:if="{{demoMode}}" class="idx__demo">演示模式</text>
-  </view>
-  <text class="idx__slogan">学生党买东西，最怕的不是贵，是买错</text>
-
-  <!-- 追问区：打字机逐字出，出完才允许继续输入 -->
-  <view wx:if="{{followup}}" class="idx__followup">
-    <text class="idx__followup-label">学长问一句</text>
-    <type-writer text="{{followup}}" speed="35" autoplay="{{true}}" bind:done="onFollowupDone" />
+  <!-- 品牌行 -->
+  <view class="idx-topbar" hover-class="is-pressed" hover-stay-time="80" bindtap="onLogoTap">
+    <view class="idx-brand">
+      <view class="idx-brand-mark">避</view>
+      <view class="idx-brand-name">避坑导购</view>
+    </view>
+    <view class="idx-topbar-pill" bindlongpress="onVersionLongPress">BETA</view>
   </view>
 
-  <!-- 输入区 -->
-  <view class="idx__input-wrap">
-    <textarea
-      class="idx__input"
-      value="{{rawInput}}"
-      placeholder="想买什么？带上预算更准，例：初音手办 300 以内"
-      maxlength="200"
-      auto-height
-      disabled="{{loading}}"
-      bindinput="onInput"
-    />
-    <view class="idx__count">{{rawInput.length}}/200</view>
+  <!-- 日期与问候 -->
+  <view class="idx-hello">
+    <view class="idx-hello-date">{{todayLabel}}</view>
+    <view class="idx-hello-title">{{greeting}}，今天想<text class="idx-hello-em">避开什么坑</text>？</view>
+    <view class="idx-hello-sub">下单前 30 秒，先看红线，再下单</view>
   </view>
 
-  <view class="idx__submit {{loading ? 'idx__submit--disabled' : ''}} tap" bindtap="onSubmit">
-    <text wx:if="{{!loading}}">帮我避个坑</text>
-    <text wx:else>{{stage === 'judging' ? '正在判断需求…' : stage === 'merging' ? '正在整理结论…' : '正在翻避坑库…'}}</text>
-  </view>
-
-  <text wx:if="{{tip}}" class="idx__tip">{{tip}}</text>
-
-  <!-- 快捷标签 -->
-  <view class="idx__tags">
-    <text class="idx__tags-label">{{demoMode ? '照这个答我' : '试试这些'}}</text>
-    <view class="idx__tag-list">
-      <text
-        wx:for="{{quickTags}}"
-        wx:key="*this"
-        class="idx__tag tap"
-        data-tag="{{item}}"
-        bindtap="onQuickTag"
-      >{{item}}</text>
+  <!-- 周历横排 -->
+  <view class="idx-week">
+    <view wx:for="{{weekDays}}" wx:key="date" class="idx-day {{item.isToday ? 'idx-day-on' : ''}}">
+      <text class="idx-day-label">{{item.label}}</text>
+      <text class="idx-day-num">{{item.date}}</text>
+      <view wx:if="{{item.isToday}}" class="idx-day-dot"></view>
     </view>
   </view>
 
-  <!-- 验收入口：一键进演示模式跑完整闭环（A 加，C 可改样式/位置） -->
-  <text wx:if="{{!demoMode}}" class="idx__sample tap" bindtap="onSampleTap">没想好？看个完整示例 →</text>
-  <text wx:else class="idx__sample tap" bindtap="onSampleExit">退出演示模式</text>
+  <block wx:if="{{!followupVisible}}">
+    <!-- 浅绿数据卡 -->
+    <view class="idx-stat">
+      <view class="idx-stat-main">
+        <view class="idx-stat-caption">我的避坑档案</view>
+        <view class="idx-stat-num">{{archiveCount}}<text class="idx-stat-unit">张决策卡</text></view>
+        <view class="idx-stat-note">每次提问都会留下一张卡，随时回看</view>
+      </view>
+      <view class="idx-stat-art">
+        <view class="idx-stat-orbit"></view>
+        <view class="idx-stat-core"></view>
+      </view>
+    </view>
 
-  <!-- 底部：档案入口 + 用量 + 版本号（长按进自检） -->
-  <view class="idx__foot">
-    <text class="idx__link" bindtap="goArchive">我的档案</text>
-    <text class="idx__usage">{{usageText}}</text>
-    <text class="idx__version" bindlongpress="onVersionLongPress">v{{version}}</text>
+    <!-- 分区标题 + 胶囊筛选 -->
+    <view class="idx-section">
+      <view class="idx-section-title">想问点什么</view>
+      <view class="idx-section-more" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">全部档案 ›</view>
+    </view>
+    <view class="idx-quick-tags">
+      <view wx:for="{{quickTags}}" wx:key="*this" class="idx-tag-wrap" data-text="{{item}}"
+        hover-class="is-pressed" hover-stay-time="80" bindtap="onQuickTag">
+        <tag-pill text="{{item}}" />
+      </view>
+    </view>
+
+    <!-- 输入卡 -->
+    <view class="idx-input-card">
+      <view class="idx-input-head">
+        <view class="idx-input-label">说说你想买的东西</view>
+        <view class="idx-input-badge">第 1 步</view>
+      </view>
+      <textarea class="idx-input" value="{{rawInput}}" bindinput="onInput" maxlength="200"
+        placeholder="例如：预算 3000 的笔记本，主要用来写论文" placeholder-class="bk-placeholder" adjust-position="{{true}}" />
+      <view class="idx-input-foot">
+        <view class="idx-input-tip">预算 · 用途 · 在意的点</view>
+        <view class="idx-input-limit">最多 200 字</view>
+      </view>
+    </view>
+
+    <!-- 列表卡 -->
+    <view class="idx-list">
+      <view wx:if="{{hasArchive}}" class="idx-list-row" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">
+        <view class="idx-list-icon idx-list-icon-a">档</view>
+        <view class="idx-list-body">
+          <view class="idx-list-title">最近看过</view>
+          <view class="idx-list-desc">回看之前生成的决策卡</view>
+        </view>
+        <view class="idx-list-arrow">›</view>
+      </view>
+      <view class="idx-list-row">
+        <view class="idx-list-icon idx-list-icon-b">坑</view>
+        <view class="idx-list-body">
+          <view class="idx-list-title">先看红线，再看依据</view>
+          <view class="idx-list-desc">每个结论都带可点开的来源</view>
+        </view>
+      </view>
+      <view class="idx-list-row idx-list-row-last">
+        <view class="idx-list-icon idx-list-icon-c">词</view>
+        <view class="idx-list-body">
+          <view class="idx-list-title">一键复制搜索关键词</view>
+          <view class="idx-list-desc">拿着关键词去平台自己核对</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 通栏主按钮 -->
+    <button class="idx-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
+      loading="{{loading}}" disabled="{{loading}}">{{loading ? '正在生成…' : '生成避坑决策卡'}}</button>
+    <view class="idx-send-note">只做辅助，不替你下单</view>
+  </block>
+
+  <block wx:else>
+    <!-- 追问态 -->
+    <view class="idx-chat-card">
+      <view class="idx-chat-label">再补一句，结论更准</view>
+      <view class="idx-chat">
+        <view wx:for="{{bubbles}}" wx:key="ts" class="idx-bubble idx-bubble-{{item.role}}">
+          <type-writer wx:if="{{item.role === 'assistant' && index == bubbles.length - 1}}"
+            text="{{item.content}}" speed="{{35}}" bind:done="onTypeWriterDone" />
+          <text wx:else>{{item.content}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="idx-quick-replies">
+      <view wx:for="{{quickReplies}}" wx:key="*this" class="idx-tag-wrap" data-text="{{item}}"
+        hover-class="is-pressed" hover-stay-time="80" bindtap="onQuickReply">
+        <tag-pill text="{{item}}" />
+      </view>
+    </view>
+    <view class="idx-input-card idx-input-sticky">
+      <input class="idx-input-single" value="{{rawInput}}" bindinput="onInput" maxlength="200"
+        placeholder="补充说明…" placeholder-class="bk-placeholder" adjust-position="{{true}}" />
+      <button class="idx-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
+        loading="{{loading}}" disabled="{{loading}}">发送</button>
+    </view>
+  </block>
+
+  <!-- 底部图标导航行 -->
+  <view class="idx-dock">
+    <view class="idx-dock-item idx-dock-on">
+      <view class="idx-dock-icon">问</view>
+      <text class="idx-dock-text">问一句</text>
+    </view>
+    <view class="idx-dock-item" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">
+      <view class="idx-dock-icon idx-dock-icon-b">档</view>
+      <text class="idx-dock-text">我的档案</text>
+    </view>
+    <view class="idx-dock-item">
+      <view class="idx-dock-icon idx-dock-icon-c">据</view>
+      <text class="idx-dock-text">有据可查</text>
+    </view>
+    <view class="idx-dock-item">
+      <view class="idx-dock-icon idx-dock-icon-d">助</view>
+      <text class="idx-dock-text">只做辅助</text>
+    </view>
   </view>
 
-  <text class="idx__disclaimer">内容由 AI 生成，仅供参考 · 不构成购买建议</text>
+  <state-view wx:if="{{showStateView}}" state="{{stateViewState}}"
+    title="{{stateViewTitle}}" desc="{{stateViewDesc}}" bind:retry="onRetry" />
 </view>

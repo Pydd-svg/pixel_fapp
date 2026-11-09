@@ -1,6 +1,0 @@
-<view wx:if="{{items.length}}" class="flag">
-  <view wx:for="{{items}}" wx:key="*this" class="flag__item">
-    <text class="flag__icon">⚠️</text>
-    <text class="flag__text">{{item}}</text>
-  </view>
-</view>

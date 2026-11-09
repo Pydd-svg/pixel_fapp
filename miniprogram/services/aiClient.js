@@ -6,7 +6,7 @@
  * 契约硬约束：decide 与 verify **永不 reject**，任何失败都返回合法对象。
  *
  * 通道优先级（config.ADAPTER='auto' 时自动探测）：
- *   直连大模型（wx.request → OpenAI 兼容端点，默认 glm-4.7-flash，零成本）
+ *   直连大模型（wx.request → OpenAI 兼容端点，默认 deepseek-flash，零成本）
  *     → Agent（ai.bot.sendMessage，RAG + 0 成本）
  *       → createModel().streamText（云开发 AI SDK）
  *         → 云函数 aiFallback（Key 放服务端时的正规通道）
@@ -17,6 +17,7 @@ const config = require('./config');
 const C = require('./constants');
 const { parseAgentJSON } = require('./parseAgentJSON');
 const S = require('./schema');
+const KB = require('./knowledge');
 const cache = require('./cache');
 const metrics = require('./metrics');
 const storage = require('./storage');
@@ -300,7 +301,7 @@ async function sendViaModel(opts, token) {
 
 /* ---------------------- 直连大模型通道（OpenAI 兼容） ---------------------- */
 
-/** 联网检索工具：智谱按次计费（0.01 元/次），账户没钱时会 4xx，代码会自动摘掉重试 */
+/** 联网检索工具：仅部分聚合端点支持，DeepSeek 官方 API 不提供，当前关闭 */
 const WEB_SEARCH_TOOL = {
   type: 'web_search',
   web_search: { enable: true, search_result: true }
@@ -314,7 +315,7 @@ function httpEndpoint() {
   return String(config.LLM.baseUrl || '').replace(/\/+$/, '') + '/chat/completions';
 }
 
-/** 从上游错误体里抠一句人话（智谱是 {error:{code,message}}） */
+/** 从上游错误体里抠一句人话（通常是 {error:{code,message}}） */
 function upstreamMessage(data, status) {
   if (data && typeof data === 'object') {
     const e = data.error || data;
@@ -400,6 +401,12 @@ function httpQueued(body, timeoutMs) {
 /* 模型冷却表：被限流的模型先排到队尾，冷却期过了自动回队首。
    落盘一份：不然每次重新编译都先白打一枪 4.7，控制台又冒一条 429 红字。 */
 const KEY_COOLDOWN = 'llm_cooldown_v1';
+
+/** 取上游/微信的原始错误文案，截断后给降级卡展示用 */
+function errTextOf(err) {
+  const raw = String((err && (err.errMsg || err.message)) || err || '');
+  return raw.slice(0, 160);
+}
 const modelCooldownUntil = (function loadCooldown() {
   try {
     if (typeof wx === 'undefined' || typeof wx.getStorageSync !== 'function') return {};
@@ -484,8 +491,6 @@ async function sendViaHttp(opts, token) {
     temperature: typeof opts.temperature === 'number' ? opts.temperature : 0.3,
     stream: false
   };
-  // 混合思考模型默认先想一大段，关掉后 5-6 秒就能出卡
-  if (config.LLM.thinking === false) base.thinking = { type: 'disabled' };
 
   let useTools = !!opts.webSearch;
   let toolStripped = false;
@@ -517,11 +522,11 @@ async function sendViaHttp(opts, token) {
         sent += 1;
         try {
           // 单个请求不占满整个超时预算：留出至少一次换模型的机会。
-          // 第一枪卡得更紧（9 秒）：主模型正常 6-8 秒就回，没回基本就是它在排队，
-          // 与其干等 15 秒，不如立刻换那个实测 8 秒稳定的替补。
+          // DeepSeek 的 flash 模型带推理链，实测出卡约 12 秒，所以首枪给到 18 秒；
+          // 后续模型单次最多 18 秒，剩余时间不够就由外层截止时间兜底。
           const perTry = sent === 1
-            ? Math.min(left, 9000)
-            : Math.min(left, Math.max(9000, Math.round(timeoutMs * 0.6)));
+            ? Math.min(left, 18000)
+            : Math.min(left, Math.max(12000, Math.round(timeoutMs * 0.6)));
           const payload = await httpQueued(body, perTry);
           const text = pickText(payload);
           if (!text) throw mkErr('E_PARSE', '模型返回内容为空');
@@ -591,6 +596,7 @@ async function sendViaHttp(opts, token) {
 
 async function callCloudChat(opts) {
   if (!cloudReady()) throw mkErr('E_NET', '云开发未配置，云函数通道不可用');
+  console.info('[callCloudChat] 调用云函数，webSearch=', !!opts.webSearch, 'searchMode=', opts.searchMode || 'decide');
   let r;
   try {
     r = await wx.cloud.callFunction({
@@ -599,7 +605,9 @@ async function callCloudChat(opts) {
         action: 'chat',
         messages: opts.messages,
         temperature: opts.temperature,
-        expectJson: !!opts.expectJson
+        expectJson: !!opts.expectJson,
+        webSearch: !!opts.webSearch,
+        searchMode: opts.searchMode || 'decide'
       }
     });
   } catch (e) {
@@ -737,6 +745,26 @@ function guessCategory(input) {
   return 'universal';
 }
 
+/**
+ * 会话内购买意图继承。
+ * 追问场景用户常只回「没想好，你建议」「预算 1000 左右」这类不带品类词的短句，
+ * 直接拿它算缓存指纹或检索知识都会丢失上文品类。这里回溯最近一条能识别品类的用户发言，
+ * 把品类和查询语继承下来，避免不同品类共用同一张缓存卡。
+ */
+function inheritIntent(input, history) {
+  const ownCat = KB.detectCategory(input);
+  if (ownCat !== 'universal') return { category: ownCat, mergedQuery: input };
+  const list = Array.isArray(history) ? history : [];
+  for (let i = list.length - 1; i >= 0; i--) {
+    const m = list[i];
+    if (!m || m.role !== 'user') continue;
+    const text = String(m.content || '');
+    const cat = KB.detectCategory(text);
+    if (cat !== 'universal') return { category: cat, mergedQuery: text + ' ｜ ' + input };
+  }
+  return { category: ownCat, mergedQuery: input };
+}
+
 function followupCard(question, channel, startedAt) {
   return {
     status: 'success',
@@ -750,6 +778,25 @@ function followupCard(question, channel, startedAt) {
       cache_hit: false
     }
   };
+}
+
+/**
+ * 依据落地：模型给的 id 必须能在本次注入的知识条目里找到；
+ * 全部被过滤（模型没写 / 写了幻觉 id）时，用本次真实注入的条目兜底，
+ * 保证卡片上的每一条依据都能点开看到原文。
+ */
+function groundRefs(card, kbItems, kbCategory) {
+  const dd = card && card.decision_data;
+  if (!dd) return card;
+  // kbItems=null 表示走 Agent 通道：云端知识库自己召回，只校验 id 真实存在
+  const allowed = kbItems ? kbItems.map((it) => it.id) : null;
+  let refs = KB.filterRefs(dd.knowledge_refs, allowed);
+  if (kbItems && !refs.length && allowed.length && kbCategory !== 'universal') {
+    refs = KB.filterRefs(allowed, null).slice(0, 2);
+  }
+  dd.knowledge_refs = refs;
+  if (refs.length && dd.confidence === 'low') dd.confidence = 'medium';
+  return card;
 }
 
 function stamp(card, startedAt, channel, cacheHit) {
@@ -805,7 +852,7 @@ async function attemptDecide(messages, opts) {
   const o = opts || {};
   const primary = resolveAdapter(config.BOT_ID_DECIDE);
   // 直连通道内部已经做了模型降级 + 重试，外层再叠一次只会把请求数翻倍
-  const plan = [{ source: primary, attempts: primary === 'http' ? 1 : 2 }];
+  const plan = [{ source: primary, attempts: primary === 'http' || primary === 'cloudfn' ? 1 : 2 }];
   if (config.FEATURE.useFallback && primary !== 'cloudfn' && cloudReady()) {
     plan.push({ source: 'cloudfn', attempts: 1 });
   }
@@ -825,7 +872,10 @@ async function attemptDecide(messages, opts) {
           messages: isRetry ? messages.concat([{ role: 'user', content: RETRY_HINT }]) : messages,
           temperature: isRetry ? 0 : o.temperature,
           expectJson: true,
-          timeoutMs: o.timeoutMs || DECIDE_TIMEOUT_MS
+          timeoutMs: o.timeoutMs || DECIDE_TIMEOUT_MS,
+          // 决策卡也要真实价格：走云函数时允许它先联网检索一次报价
+          webSearch: step.source === 'cloudfn' && config.LLM && config.LLM.verifyWebSearch,
+          searchMode: 'decide'
         });
 
         const parsed = parseAgentJSON(res.text);
@@ -852,9 +902,10 @@ async function attemptDecide(messages, opts) {
 const RETRY_HINT =
   '上一次的输出无法解析或缺少必填字段。请只输出一个 <json></json> 包裹的 JSON 对象，' +
   '不要任何解释文字；必须包含 status / is_followup / followup_question / decision_data，' +
-  'decision_data 必须含 card_title / category / budget_band / tags / recommendations / red_flags / ' +
-  'search_keyword / knowledge_refs / confidence / disclaimer；recommendations 1-2 项、red_flags 1-3 条，' +
-  'price_expectation 必须写成「数字-数字元」的区间。';
+  'decision_data 必须含 card_title / category / budget_band / tags / price_source / price_note / ' +
+  'entity_status / unverified_entities / recommendations / red_flags / search_keyword / knowledge_refs / ' +
+  'confidence / disclaimer；recommendations 1-2 项、red_flags 1-3 条。' +
+  'price_source 只能是 kb / web / null；为空时 price_expectation 填 ""。';
 
 function mapErrorToCode(err) {
   if (!err) return 'E_UNKNOWN';
@@ -928,8 +979,14 @@ async function decide(p) {
     }
 
     // 4) 缓存（需求指纹 24h）
-    const category = guessCategory(input);
-    const fp = cache.fingerprint(input, category);
+    //    追问场景用户常只回「没想好，你建议」「预算 1000 左右」这类不带品类词的短句。
+    //    若只用当前句算指纹，固定文本 + universal 会得到同一个 key，
+    //    导致不管上文问的是耳机还是手办，都命中同一张旧卡（串味 bug）。
+    //    所以这类句子要回溯历史，继承最近一次购买意图再算指纹。
+    const intent = inheritIntent(input, history);
+    const category = intent.category;
+    const kbQuery = intent.mergedQuery;
+    const fp = cache.fingerprint('v2|' + kbQuery, category);
     const cached = cache.get(fp);
     if (cached) {
       const card = stamp(cached, started, 'cache', true);
@@ -960,11 +1017,19 @@ async function decide(p) {
     }
 
     // 6) 主调用链
-    //    直连 / 云函数通道没有挂知识库，必须补一段「能力边界」约束，
-    //    否则模型会编 knowledge_refs 和具体批次（schema 会判废，白白多花一次调用）
+    //    直连 / 云函数通道没有云端知识库，先用端侧检索把命中条目注入 prompt；
+    //    一条都没命中时退回「能力边界」约束，禁止模型编 knowledge_refs。
     const primary = resolveAdapter(config.BOT_ID_DECIDE);
-    const systemContent =
-      config.DECIDE_SYSTEM_PROMPT + (primary === 'bot' ? '' : config.PROMPT_PATCH_NO_KB);
+    // 用继承后的 kbQuery 检索：短句追问时才能命中上文品类的知识条目
+    const kb = KB.retrieve(kbQuery, category);
+    let systemContent = config.DECIDE_SYSTEM_PROMPT;
+    if (primary === 'bot') {
+      // Agent 通道已在控制台挂载云端知识库，由 Agent 自己召回
+    } else if (kb.items.length) {
+      systemContent += config.PROMPT_PATCH_WITH_KB + '\n\n' + KB.buildContext(kb.items);
+    } else {
+      systemContent += config.PROMPT_PATCH_NO_KB;
+    }
     const messages = [{ role: 'system', content: systemContent }]
       .concat(history.slice(-6))
       .concat([{ role: 'user', content: input }]);
@@ -975,9 +1040,10 @@ async function decide(p) {
     const result = await attemptDecide(messages, { userMsg: input, temperature: 0.3, timeoutMs: DECIDE_TIMEOUT_MS });
 
     if (result.ok) {
-      const card = stamp(result.card, started, result.channel, false);
-      // 只缓存成功结果，避免把降级卡污染 24 小时
-      cache.set(fp, card, config.CACHE_TTL.decide);
+      const kbForGround = result.channel === 'bot' ? null : kb.items;
+      const card = groundRefs(stamp(result.card, started, result.channel, false), kbForGround, kb.category);
+      // 只缓存成功结果，避免把降级卡污染 24 小时；追问卡也不缓存，否则会锁死上文
+      if (!card.is_followup) cache.set(fp, card, config.CACHE_TTL.decide);
       emit('done', { channel: result.channel, level: result.level, followup: card.is_followup });
       record('decide', card, started, { level: result.level });
       return card;
@@ -987,6 +1053,7 @@ async function decide(p) {
     const code = mapErrorToCode(result.error);
     const card = S.buildDegradedCard(code, { elapsed_ms: Date.now() - started });
     card.meta.elapsed_ms = Date.now() - started;
+    card.meta.error_message = errTextOf(result.error);
     emit('degraded', { error_code: code });
     record('decide', card, started, { level: result.level });
     return card;
@@ -994,6 +1061,7 @@ async function decide(p) {
     // 兜底中的兜底：连降级卡都没造出来，也要返回合法对象
     const card = S.buildDegradedCard(mapErrorToCode(err), { elapsed_ms: Date.now() - started });
     card.meta.elapsed_ms = Date.now() - started;
+    card.meta.error_message = errTextOf(err);
     emit('degraded', { error_code: card.error_code });
     record('decide', card, started);
     return card;
@@ -1065,6 +1133,7 @@ async function verify(p) {
     const ck = cache.fingerprint('verify:' + keyword, '');
     const cached = cache.get(ck);
     if (cached) {
+      console.info('[verify] 缓存命中，跳过云函数调用，status=', cached.status);
       const r = clone(cached);
       r.meta = Object.assign({}, r.meta, { elapsed_ms: Date.now() - started, cache_hit: true, channel: 'cache' });
       emit('done', { cache_hit: true, status: r.status });
@@ -1086,8 +1155,9 @@ async function verify(p) {
     const userMsg = '[ADVANCED_SEARCH: ' + keyword + ']' + (cardTitle ? '\n商品上下文：' + cardTitle : '');
 
     const primary = resolveAdapter(config.BOT_ID_VERIFY);
-    // 直连通道可以挂联网检索（搜索工具按次计费，失败会自动摘掉降级）
-    const wantSearch = !!(primary === 'http' && config.LLM && config.LLM.enabled && config.LLM.verifyWebSearch);
+    // 联网检索由云函数执行（DeepSeek 官方 API 没有 web_search 工具），只在 cloudfn 通道开启
+    const wantSearch = !!(primary === 'cloudfn' && config.LLM && config.LLM.enabled && config.LLM.verifyWebSearch);
+    console.info('[verify] 诊断：primary=', primary, 'wantSearch=', wantSearch, 'LLM.enabled=', !!(config.LLM && config.LLM.enabled), 'verifyWebSearch=', !!(config.LLM && config.LLM.verifyWebSearch), 'cloudReady=', cloudReady());
     const verifyPatch =
       primary === 'bot'
         ? ''
@@ -1103,7 +1173,7 @@ async function verify(p) {
     storage.bumpUsage('verify');
 
     // 直连通道内部已换模型重试过，这里不再重复打（否则 2×5 枪会把自己限流死）
-    const plan = [{ source: primary, attempts: primary === 'http' ? 1 : 2 }];
+    const plan = [{ source: primary, attempts: primary === 'http' || primary === 'cloudfn' ? 1 : 2 }];
     if (config.FEATURE.useFallback && primary !== 'cloudfn' && cloudReady()) {
       plan.push({ source: 'cloudfn', attempts: 1 });
     }
@@ -1118,7 +1188,8 @@ async function verify(p) {
             messages: i > 0 ? messages.concat([{ role: 'user', content: '只输出 <json></json> 包裹的 JSON，不要解释文字。' }]) : messages,
             temperature: i > 0 ? 0 : 0.5,
             expectJson: true,
-            webSearch: wantSearch && plan[pi].source === 'http' && i === 0,
+            webSearch: wantSearch && plan[pi].source === 'cloudfn' && i === 0,
+            searchMode: 'verify',
             timeoutMs: VERIFY_TIMEOUT_MS
           });
 
@@ -1134,7 +1205,8 @@ async function verify(p) {
             cache_hit: false,
             channel: res.channel
           };
-          if (r.status !== 'degraded' && r.status !== 'error') cache.set(ck, r, config.CACHE_TTL.verify);
+          // empty 不缓存：可能是搜索临时失败，缓存会导致用户一直看到"暂未检索到有效口碑"
+          if (r.status === 'success') cache.set(ck, r, config.CACHE_TTL.verify);
           emit('done', { status: r.status, channel: res.channel });
           record('verify', r, started, { level: parsed.level });
           return r;

@@ -7,10 +7,10 @@
   ],
   "window": {
     "backgroundTextStyle": "dark",
-    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarBackgroundColor": "#FBFCF8",
     "navigationBarTitleText": "避坑导购",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F7F8FA"
+    "backgroundColor": "#F4F6F0"
   },
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"

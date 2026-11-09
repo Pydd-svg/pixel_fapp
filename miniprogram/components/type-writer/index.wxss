@@ -1,4 +1,2 @@
-/* 归属 C 岗 */
-.tw { font-size: 30rpx; line-height: 1.7; color: #1F2937; white-space: pre-wrap; }
-.tw__caret { color: #FF5A3C; animation: blink 0.9s step-end infinite; }
-@keyframes blink { 50% { opacity: 0; } }
+.tw-root { white-space: pre-wrap; }
+.tw-caret { display: inline-block; width: 2rpx; height: 28rpx; margin-left: 4rpx; vertical-align: -2rpx; background: var(--c-primary-press); animation: bk-caret 1s step-end infinite; }

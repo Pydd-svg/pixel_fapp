@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VerifyResult",
+  "description": "联网核实结果（契约 §4.2）。运行时以 miniprogram/services/schema.js 为准。",
+  "type": "object",
+  "required": ["status", "search_summary", "checked_at", "sources"],
+  "properties": {
+    "status": { "enum": ["success", "empty", "failed"] },
+    "search_summary": {
+      "type": "object",
+      "required": ["community_feedback", "recent_verdict", "caution_alert"],
+      "properties": {
+        "community_feedback": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "string",
+            "maxLength": 40,
+            "not": { "pattern": "https?://|www\\.|(\\d+\\s*元)|(¥|￥)" }
+          }
+        },
+        "recent_verdict": { "type": "string", "maxLength": 40 },
+        "caution_alert": { "type": "string", "maxLength": 40 }
+      }
+    },
+    "checked_at": { "type": "string", "format": "date-time" },
+    "sources": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["site_name"],
+        "properties": {
+          "site_name": { "type": "string", "maxLength": 12 }
+        }
+      }
+    },
+    "search_keyword": { "type": "string", "maxLength": 30 }
+  }
+}
