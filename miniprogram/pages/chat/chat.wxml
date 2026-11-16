@@ -1,0 +1,33 @@
+<view class="chat-page">
+  <scroll-view class="chat-scroll" scroll-y scroll-top="{{scrollTop}}" scroll-with-animation
+    enhanced show-scrollbar="{{false}}">
+    <view wx:if="{{!messages.length}}" class="chat-empty">
+      <view class="chat-empty-logo">AI</view>
+      <view class="chat-empty-title">有什么想聊的？</view>
+      <view class="chat-empty-desc">自由提问，需要时会自动联网搜索</view>
+    </view>
+
+    <view wx:for="{{messages}}" wx:key="id" id="{{item.id}}"
+      class="chat-message {{item.role === 'user' ? 'chat-message-user' : 'chat-message-ai'}}">
+      <view wx:if="{{item.role === 'assistant'}}" class="chat-avatar">AI</view>
+      <view class="chat-bubble {{item.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'}}">
+        <block wx:if="{{item.role === 'assistant'}}">
+          <view wx:if="{{item.status === 'loading' && !item.text}}" class="chat-stage">{{stage === 'searching' ? '正在联网搜索…' : '正在思考…'}}</view>
+          <text wx:else user-select class="chat-text">{{item.text}}{{item.status === 'loading' ? '▍' : ''}}</text>
+          <button wx:if="{{item.status === 'error'}}" class="chat-retry" data-id="{{item.id}}"
+            hover-class="is-pressed" bindtap="onRetry">重新回答</button>
+        </block>
+        <text wx:else user-select class="chat-text">{{item.text}}</text>
+      </view>
+    </view>
+    <view class="chat-bottom-space"></view>
+  </scroll-view>
+
+  <view class="chat-composer">
+    <textarea class="chat-input" value="{{input}}" maxlength="2000" auto-height disable-default-padding
+      placeholder="输入你的问题" placeholder-class="chat-input-placeholder" confirm-type="send"
+      cursor-spacing="20" bindinput="onInput" bindconfirm="onSubmit" />
+    <button class="chat-send {{canSend ? 'chat-send-active' : ''}}" disabled="{{!canSend}}"
+      hover-class="is-pressed" bindtap="onSubmit">发送</button>
+  </view>
+</view>

@@ -27,7 +27,6 @@ Page({
     demoMode: false,
     archiveCount: 0,
     quickTags: Object.keys(QUICK_TEXT),
-    quickReplies: ['预算 500 以内', '预算 1000 左右', '没想好，你建议'],
     readItems: READ_ITEMS,
     // 必读卡消融完，连下方留白一起收掉（纯布局，不构成操作门槛）
     gateGone: false,
@@ -99,11 +98,6 @@ Page({
   onQuickTag(e) {
     const label = (e.currentTarget.dataset || {}).text || '';
     this.setData({ rawInput: QUICK_TEXT[label] || label });
-  },
-
-  onQuickReply(e) {
-    const text = (e.currentTarget.dataset || {}).text || '';
-    this.setData({ rawInput: text }, () => this.onSubmit());
   },
 
   async onSubmit() {

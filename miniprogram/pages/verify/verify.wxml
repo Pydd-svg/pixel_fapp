@@ -24,14 +24,14 @@
   </view>
 
   <button class="vf-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
-    loading="{{loading}}" disabled="{{loading}}">{{loading ? '正在检索…' : '开始搜索评价'}}</button>
+    loading="{{loading}}" disabled="{{loading}}">{{loading ? stageText : '开始搜索评价'}}</button>
 
-  <!-- 检索结果 -->
+  <!-- 检索结果：流式生成时，已完成的字段和条目直接在这里渐进显示 -->
   <view wx:if="{{state !== 'idle'}}" class="vf-result">
-    <view wx:if="{{state === 'loading'}}" class="vf-loading">正在检索全网口碑…</view>
+    <view wx:if="{{state === 'loading' && !verdict && !feedback.length && !caution}}" class="vf-loading">{{stageText}}</view>
 
-    <view wx:elif="{{state === 'done'}}" class="vf-done">
-      <view class="vf-verdict">{{verdict}}</view>
+    <view wx:if="{{state === 'done' || (state === 'loading' && (verdict || feedback.length || caution))}}" class="vf-done">
+      <view wx:if="{{verdict}}" class="vf-verdict">{{verdict}}</view>
 
       <view wx:if="{{feedback.length}}" class="vf-list">
         <view wx:for="{{feedback}}" wx:key="*this" class="vf-item">
@@ -45,11 +45,21 @@
       <view wx:if="{{sources.length}}" class="vf-sources">
         来源：<text wx:for="{{sources}}" wx:key="*this" class="vf-source">{{item}}</text>
       </view>
+
+      <view wx:if="{{state === 'loading'}}" class="vf-loading vf-streaming">{{stageText}}</view>
     </view>
 
-    <view wx:elif="{{state === 'empty'}}" class="vf-tip">暂未检索到有效口碑，换个更具体的型号试试</view>
+    <view wx:if="{{state === 'empty'}}" class="vf-tip">暂未检索到有效口碑，换个更具体的型号试试</view>
 
-    <view wx:else class="vf-tip">当前检索繁忙，稍后再试{{errorCode ? '（' + errorCode + '）' : ''}}</view>
+    <view wx:if="{{showSearchOptions && searchOptions.length}}" class="vf-refine">
+      <view class="vf-refine-title">{{state === 'empty' ? '没有搜到？试试这些搜索' : '没找到准确型号？试试这些搜索'}}</view>
+      <view class="vf-options">
+        <button wx:for="{{searchOptions}}" wx:key="query" class="vf-option" hover-class="vf-option-active"
+          data-query="{{item.query}}" bindtap="onSearchOptionTap">{{item.label}}</button>
+      </view>
+    </view>
+
+    <view wx:if="{{state === 'degraded'}}" class="vf-tip">当前检索繁忙，稍后再试{{errorCode ? '（' + errorCode + '）' : ''}}</view>
   </view>
 
   <view class="vf-note">只汇总公开说法，不替代专业评测，也不给购买链接</view>

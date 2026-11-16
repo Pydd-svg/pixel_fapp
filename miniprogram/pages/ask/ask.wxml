@@ -74,12 +74,6 @@
         </view>
       </view>
     </view>
-    <view class="ax-quick-replies">
-      <view wx:for="{{quickReplies}}" wx:key="*this" class="ax-tag-wrap" data-text="{{item}}"
-        hover-class="is-pressed" hover-stay-time="80" bindtap="onQuickReply">
-        <tag-pill text="{{item}}" />
-      </view>
-    </view>
     <view class="ax-input-card ax-input-sticky">
       <input class="ax-input-single" value="{{rawInput}}" bindinput="onInput" maxlength="200"
         placeholder="补充说明…" placeholder-class="bk-placeholder" adjust-position="{{true}}" />

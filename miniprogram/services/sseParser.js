@@ -148,6 +148,17 @@ function extractPreview(text, prev) {
   };
 }
 
+/** 查口碑结果按字段/条目渐进展示，最终内容仍由 schema 统一校验。 */
+function extractVerifyPreview(text, prev) {
+  const base = prev || { verdict: '', feedback: [], caution: '' };
+  const feedback = pickStringArray(text, 'community_feedback', 4);
+  return {
+    verdict: pickString(text, 'recent_verdict') || base.verdict,
+    feedback: feedback.length ? feedback : base.feedback,
+    caution: pickString(text, 'caution_alert') || base.caution
+  };
+}
+
 module.exports = {
   createUtf8Decoder,
   createSSEParser,
@@ -155,5 +166,6 @@ module.exports = {
   pickString,
   pickStringArray,
   pickRecommendationNames,
-  extractPreview
+  extractPreview,
+  extractVerifyPreview
 };

@@ -70,11 +70,15 @@
     </view>
   </view>
 
-  <!-- 底部双入口 -->
+  <!-- 底部三入口 -->
   <view class="idx-dock">
     <view class="idx-dock-item" hover-class="is-pressed" hover-stay-time="80" bindtap="goAsk">
       <view class="idx-dock-icon">问</view>
       <text class="idx-dock-text">问一句</text>
+    </view>
+    <view class="idx-dock-item" hover-class="is-pressed" hover-stay-time="80" bindtap="goChat">
+      <view class="idx-dock-icon idx-dock-icon-ai">AI</view>
+      <text class="idx-dock-text">AI 助手</text>
     </view>
     <view class="idx-dock-item" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">
       <view class="idx-dock-icon idx-dock-icon-b">档</view>

@@ -51,8 +51,7 @@
 }
 
 /* 品类胶囊 */
-.ax-quick-tags,
-.ax-quick-replies {
+.ax-quick-tags {
   display: flex;
   flex-wrap: wrap;
   margin-top: var(--sp-sm);

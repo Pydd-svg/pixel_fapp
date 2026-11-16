@@ -236,7 +236,7 @@
 .idx-list-desc { margin-top: 4rpx; font-size: var(--fs-pill); color: var(--c-text-3); }
 .idx-list-arrow { padding-left: var(--sp-sm); font-size: var(--fs-title); color: var(--c-text-3); }
 
-/* 底部双入口 */
+/* 底部三入口 */
 .idx-dock {
   display: flex;
   align-items: center;
@@ -269,7 +269,18 @@
   font-weight: 800;
 }
 
-.idx-dock-icon-b { background: var(--c-primary-weak); color: var(--c-primary-press); }
+/* 三个入口图标统一：柠檬绿底 + 墨色字（与最左「问」一致） */
+.idx-dock-icon-ai {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+  font-size: 26rpx;
+  letter-spacing: 0;
+}
+
+.idx-dock-icon-b {
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+}
 
 .idx-dock-text {
   margin-top: var(--sp-xs);

@@ -119,5 +119,27 @@ function ok(name, cond, extra) {
   ok('标题未闭合时不显示半句', pv.title === '', pv.title);
 }
 
+/* ---------- 6. 查口碑结果逐字段/逐条预览 ---------- */
+{
+  const pieces = [
+    '{"status":"success","search_summary":{"recent_verdict":"整体口碑稳定"',
+    ',"community_feedback":["降噪表现好"',
+    ',"佩戴舒适"]',
+    ',"caution_alert":"夏天长时间佩戴偏热","sources_hint":["评测"]}}'
+  ];
+  let acc = '';
+  let prev = null;
+  let firstFeedbackAt = -1;
+  for (let i = 0; i < pieces.length; i++) {
+    acc += pieces[i];
+    prev = P.extractVerifyPreview(acc, prev);
+    if (firstFeedbackAt === -1 && prev.feedback.length) firstFeedbackAt = i;
+  }
+  ok('口碑摘要先于完整 JSON 显示', prev.verdict === '整体口碑稳定', prev.verdict);
+  ok('社区反馈首条提前显示', firstFeedbackAt === 1, 'at ' + firstFeedbackAt);
+  ok('社区反馈最终抽到 2 条', prev.feedback.length === 2, JSON.stringify(prev.feedback));
+  ok('注意事项随流式输出显示', prev.caution === '夏天长时间佩戴偏热', prev.caution);
+}
+
 console.log('\n' + (fail === 0 ? '全部通过' : '有失败') + '：' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

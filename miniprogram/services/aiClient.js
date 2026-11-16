@@ -1131,9 +1131,18 @@ function degradedVerify(code, startedAt) {
   };
 }
 
+/** 普通通道与流式通道共用同一套查证解析和判废规则。 */
+function finalizeVerifyText(text) {
+  const parsed = parseAgentJSON(text);
+  if (!parsed.ok) throw mkErr('E_PARSE', '解析失败 level5:' + parsed.error, { level: 5 });
+  const norm = S.normalizeVerifyResult(parsed.data);
+  if (!norm.ok) throw mkErr('E_PARSE', '判废：' + norm.errors.join('；'), { level: parsed.level });
+  return { result: norm.result, level: parsed.level };
+}
+
 /**
  * 进阶查证接口（契约 §5.1）
- * @param {{searchKeyword:string, cardTitle?:string}} p
+ * @param {{searchKeyword:string, cardTitle?:string, stream?:boolean, onPreview?:Function, onStage?:Function}} p
  * @returns {Promise<object>} VerifyResult —— 永不 reject
  */
 async function verify(p) {
@@ -1224,23 +1233,45 @@ async function verify(p) {
     for (let pi = 0; pi < plan.length; pi++) {
       for (let i = 0; i < plan[pi].attempts; i++) {
         try {
-          const res = await invokeSource(plan[pi].source, {
-            botId: config.BOT_ID_VERIFY,
-            userMsg,
-            messages: i > 0 ? messages.concat([{ role: 'user', content: '只输出 <json></json> 包裹的 JSON，不要解释文字。' }]) : messages,
-            temperature: i > 0 ? 0 : 0.5,
-            expectJson: true,
-            webSearch: wantSearch && plan[pi].source === 'cloudfn' && i === 0,
-            searchMode: 'verify',
-            timeoutMs: VERIFY_TIMEOUT_MS
-          });
+          const source = plan[pi].source;
+          let res = null;
 
-          const parsed = parseAgentJSON(res.text);
-          if (!parsed.ok) throw mkErr('E_PARSE', '解析失败 level5:' + parsed.error, { level: 5 });
-          const norm = S.normalizeVerifyResult(parsed.data);
-          if (!norm.ok) throw mkErr('E_PARSE', '判废：' + norm.errors.join('；'), { level: parsed.level });
+          // 仅第 2 步页面显式开启；结果页里的查证入口仍走原通道。
+          if (params.stream && source === 'cloudfn' && i === 0 && streamClient.supported('verify')) {
+            try {
+              const text = await streamClient.verifyStream({
+                messages,
+                temperature: 0.5,
+                webSearch: wantSearch,
+                searchQuery: keyword,
+                onStage: params.onStage,
+                onPreview: params.onPreview
+              });
+              res = { text, channel: 'stream' };
+            } catch (se) {
+              console.warn('[aiClient] 查证流式失败，回落 callFunction：', se && se.code, se && se.message);
+              if (typeof params.onPreview === 'function') {
+                params.onPreview({ verdict: '', feedback: [], caution: '' });
+              }
+              if (typeof params.onStage === 'function') params.onStage({ stage: 'searching' });
+            }
+          }
 
-          const r = norm.result;
+          if (!res) {
+            res = await invokeSource(source, {
+              botId: config.BOT_ID_VERIFY,
+              userMsg,
+              messages: i > 0 ? messages.concat([{ role: 'user', content: '只输出 <json></json> 包裹的 JSON，不要解释文字。' }]) : messages,
+              temperature: i > 0 ? 0 : 0.5,
+              expectJson: true,
+              webSearch: wantSearch && source === 'cloudfn' && i === 0,
+              searchMode: 'verify',
+              timeoutMs: VERIFY_TIMEOUT_MS
+            });
+          }
+
+          const finalized = finalizeVerifyText(res.text);
+          const r = finalized.result;
           r.meta = {
             elapsed_ms: Date.now() - started,
             degraded: false,
@@ -1250,7 +1281,7 @@ async function verify(p) {
           // empty 不缓存：可能是搜索临时失败，缓存会导致用户一直看到"暂未检索到有效口碑"
           if (r.status === 'success') cache.set(ck, r, config.CACHE_TTL.verify);
           emit('done', { status: r.status, channel: res.channel });
-          record('verify', r, started, { level: parsed.level });
+          record('verify', r, started, { level: finalized.level });
           return r;
         } catch (e) {
           lastErr = e;

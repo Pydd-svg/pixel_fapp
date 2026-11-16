@@ -63,6 +63,10 @@ Page({
     wx.navigateTo({ url: '/pages/ask/ask' });
   },
 
+  goChat() {
+    wx.navigateTo({ url: '/pages/chat/chat' });
+  },
+
   goVerify() {
     wx.navigateTo({ url: '/pages/verify/verify' });
   },

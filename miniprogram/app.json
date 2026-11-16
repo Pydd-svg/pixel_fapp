@@ -2,6 +2,7 @@
   "pages": [
     "pages/index/index",
     "pages/ask/ask",
+    "pages/chat/chat",
     "pages/verify/verify",
     "pages/result/result",
     "pages/archive/archive",
