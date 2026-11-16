@@ -1,0 +1,7 @@
+{
+  "name": "aiStream",
+  "version": "1.0.0",
+  "description": "HTTP 云函数：DeepSeek SSE 流式出卡（配合 wx.cloud.callHTTPFunction 使用）",
+  "main": "index.js",
+  "dependencies": {}
+}

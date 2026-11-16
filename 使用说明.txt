@@ -17,10 +17,10 @@
 3. 云开发控制台 → 云函数 → aiFallback → 配置 → 环境变量：
      LLM_API_KEY = 你的 DeepSeek Key（必填）
      LLM_BASE_URL = https://api.deepseek.com/v1（可不填，默认就是这个）
-     LLM_MODEL = deepseek-flash（可不填）
+     LLM_MODEL = deepseek-chat（可不填，默认就是它；换成 deepseek-flash 会慢一倍）
      SEARCH_API_KEY = 搜索 API Key（查口碑用，可不填）
      SEARCH_PROVIDER = serper / tavily / bocha / brave（可不填，默认 serper）
-   同一页把「超时时间」调到 30 秒
+   同一页把「超时时间」调到 20 秒
 4. 回到开发者工具，编译 → 预览 → 手机扫码
 
 注意：Key 只放云函数环境变量，不要写回小程序代码。
@@ -28,20 +28,43 @@
 
 二、验证是否成功
 ------------------------------------------------
-1. 首页输入「想买个初音未来手办，300以内」→ 等 10-15 秒
+方式 A（最快，电脑上跑，不花 token）：
+     DEEPSEEK_KEY=你的Key SEARCH_KEY=搜索Key node scripts/probe-api.js
+  它会回报：Key 是否有效 / 有哪些模型可用 / 每个模型首字延迟 / 搜索命中条数。
+
+方式 B（小程序里点）：
+   首页长按底部版本号 → 进「开发设置」→ 点「模型 / 搜索体检（health）」
+   会显示：Key 是否配置（只显示前后 4 位）、可用模型列表、
+           /models 与试生成耗时、搜索 provider 与命中条数。
+
+方式 C（看结果）：
+1. 首页输入「想买个初音未来手办，300以内」→ 等 5-15 秒
 2. 正常出决策卡 = 云函数通了
 3. 如果出现「AI 开小差了」，卡片上会显示：
      错误码 E_XXX
      具体原因（原始报错）
 
 
-三、错误码对照
+三、流式出卡（可选，开了标题 1-2 秒就能看见）
+------------------------------------------------
+普通云函数拿不到流式，必须再来一个 HTTP 云函数：
+1. 云开发控制台 → 云函数 → 新建 → 运行时 Node.js → 类型选「HTTP 云函数」
+2. 上传 cloudfunctions/aiStreamHTTP 整个目录（含 scf_bootstrap），函数名必须叫 aiStreamHTTP
+3. 环境变量照抄 aiFallback 那份（LLM_API_KEY / LLM_MODEL / SEARCH_API_KEY …）
+4. 把 miniprogram/services/config.js 里的 FEATURE.stream 改成 true，重新编译
+
+自检：浏览器打开该函数的 /health，看到 {"ok":true,...} 就是起来了。
+没部署、或开关是 false → 和现在完全一样，不会报错。
+控制台里找不到「HTTP 云函数」入口 = 当前环境不支持，保持开关 false 即可。
+
+
+四、错误码对照
 ------------------------------------------------
 E_AUTH    云函数环境变量 LLM_API_KEY 没配或填错
-E_TIMEOUT 云函数请求 DeepSeek 超时（把云函数超时调到 30 秒，或换 deepseek-chat）
+E_TIMEOUT 云函数请求 DeepSeek 超时（把云函数超时调到 20 秒，或换 deepseek-chat）
 E_RATE    上游限流，稍等再试
 E_QUOTA   上游余额/额度不足
-E_PARSE   模型输出不是合法 JSON，重试一次通常就好
+E_PARSE   模型输出不是合法 JSON（价格写法已做宽松归一，单值价格不再判废）
 E_NET     云函数没部署、环境 ID 不对、或云开发没开通
 E_UNKNOWN 其他错误，看卡片上的原始报错
 

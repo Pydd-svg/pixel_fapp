@@ -21,6 +21,7 @@ const KB = require('./knowledge');
 const cache = require('./cache');
 const metrics = require('./metrics');
 const storage = require('./storage');
+const streamClient = require('./streamClient');
 
 const STAGE = C.STAGE;
 const DECIDE_TIMEOUT_MS = config.DECIDE_TIMEOUT_MS;
@@ -848,6 +849,23 @@ async function secCheck(content) {
 
 /* ============================== 决策主流程 ============================== */
 
+/** 把模型吐出的整段文本收成决策卡（普通通道与流式通道共用同一套判废规则） */
+function finalizeDecideText(text) {
+  const parsed = parseAgentJSON(text);
+  if (!parsed.ok) {
+    const e = mkErr('E_PARSE', '解析失败 level5:' + parsed.error, { level: 5 });
+    e.level = parsed.level;
+    throw e;
+  }
+  const norm = S.normalizeDecisionCard(parsed.data);
+  if (!norm.ok) {
+    const e = mkErr('E_PARSE', '判废：' + norm.errors.join('；'), { level: parsed.level });
+    e.level = parsed.level;
+    throw e;
+  }
+  return { card: norm.card, level: parsed.level };
+}
+
 async function attemptDecide(messages, opts) {
   const o = opts || {};
   const primary = resolveAdapter(config.BOT_ID_DECIDE);
@@ -866,6 +884,34 @@ async function attemptDecide(messages, opts) {
       const isRetry = i > 0;
       emit(isRetry ? 'merging' : p === 0 ? 'generating' : 'merging', { channel: step.source, retry: isRetry });
       try {
+        // 优先流式：只有「云函数通道 + 首次尝试 + 开关打开 + 基础库支持」才试，
+        // 失败一律静默回落下面的普通调用，不影响出卡结果。
+        if (step.source === 'cloudfn' && i === 0 && streamClient.supported()) {
+          try {
+            emit('generating', { channel: 'stream' });
+            const text = await streamClient.decideStream({
+              messages: messages,
+              temperature: o.temperature,
+              webSearch: config.FEATURE.decideWebSearch,
+              searchQuery: o.searchQuery || o.userMsg || '',
+              onStage: (s) =>
+                emit(s && s.stage === 'searching' ? 'judging' : 'generating', { channel: 'stream', stage: s && s.stage }),
+              onPreview: (pv) => emit('partial', pv)
+            });
+            const f = finalizeDecideText(text);
+            lastLevel = f.level;
+            emit('merging', { channel: 'stream', level: f.level });
+            return { ok: true, card: f.card, channel: 'stream', level: f.level };
+          } catch (se) {
+            // 已经拿到完整输出、只是 JSON 不合法 / 判废：换通道也是同一个模型，重打只会再等一遍
+            if (se && se.code === 'E_PARSE') throw se;
+            console.warn('[aiClient] 流式失败，回落 callFunction：', se && se.code, se && se.message);
+            // 清掉半截预览，避免回落等待期间停在旧标题上
+            emit('partial', { title: '', redFlags: [], names: [] });
+            emit('generating', { channel: 'cloudfn' });
+          }
+        }
+
         const res = await invokeSource(step.source, {
           botId: config.BOT_ID_DECIDE,
           userMsg: o.userMsg,
@@ -874,19 +920,14 @@ async function attemptDecide(messages, opts) {
           expectJson: true,
           timeoutMs: o.timeoutMs || DECIDE_TIMEOUT_MS,
           // 决策卡也要真实价格：走云函数时允许它先联网检索一次报价
-          webSearch: step.source === 'cloudfn' && config.LLM && config.LLM.verifyWebSearch,
+          webSearch: step.source === 'cloudfn' && config.FEATURE.decideWebSearch,
           searchMode: 'decide'
         });
 
-        const parsed = parseAgentJSON(res.text);
-        lastLevel = parsed.level;
-        if (!parsed.ok) throw mkErr('E_PARSE', '解析失败 level5:' + parsed.error, { level: 5 });
-
-        emit('merging', { channel: res.channel, level: parsed.level });
-        const norm = S.normalizeDecisionCard(parsed.data);
-        if (!norm.ok) throw mkErr('E_PARSE', '判废：' + norm.errors.join('；'), { level: parsed.level });
-
-        return { ok: true, card: norm.card, channel: res.channel, level: parsed.level };
+        const f = finalizeDecideText(res.text);
+        lastLevel = f.level;
+        emit('merging', { channel: res.channel, level: f.level });
+        return { ok: true, card: f.card, channel: res.channel, level: f.level };
       } catch (e) {
         lastErr = e;
         console.warn('[aiClient] decide attempt fail', step.source, i, e.code, e.message);
@@ -905,7 +946,8 @@ const RETRY_HINT =
   'decision_data 必须含 card_title / category / budget_band / tags / price_source / price_note / ' +
   'entity_status / unverified_entities / recommendations / red_flags / search_keyword / knowledge_refs / ' +
   'confidence / disclaimer；recommendations 1-2 项、red_flags 1-3 条。' +
-  'price_source 只能是 kb / web / null；为空时 price_expectation 填 ""。';
+  'price_source 只能是 kb / web / estimate / null；只要能判断品类，price_expectation 必须写成「数字-数字元」，' +
+  '没有真实报价就按品类行情给宽一点的估算区间并标 estimate。';
 
 function mapErrorToCode(err) {
   if (!err) return 'E_UNKNOWN';

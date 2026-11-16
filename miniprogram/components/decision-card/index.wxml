@@ -33,7 +33,10 @@
     <view wx:for="{{card.recommendations}}" wx:key="type" class="dc-rec dc-rec-{{index}}">
       <text class="dc-rec-type">{{item.type}}</text>
       <view class="dc-rec-name">{{item.name}}</view>
-      <view class="dc-rec-price">{{item.price_expectation || '暂无可靠报价'}}</view>
+      <view class="dc-rec-price">
+        <text class="dc-price-val">{{item.price_expectation || '参考区间暂缺'}}</text>
+        <text wx:if="{{isEstimate && item.price_expectation}}" class="dc-price-tag">估算</text>
+      </view>
       <view class="dc-rec-line {{expanded[index] ? '' : 'dc-clamp'}}" data-idx="{{index}}"
         hover-class="is-pressed" hover-stay-time="80" bindtap="onTogglePros">优点：{{item.pros}}</view>
       <view class="dc-rec-line {{expanded[index] ? '' : 'dc-clamp'}}" data-idx="{{index}}"

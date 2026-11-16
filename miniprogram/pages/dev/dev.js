@@ -162,20 +162,41 @@ Page({
     try {
       const r = await wx.cloud.callFunction({
         name: config.CLOUD_FN_NAME,
-        data: { action: 'ping' }
+        data: { action: 'health' }
       });
       const res = (r && r.result) || {};
+      if (res.code !== 0) {
+        this.setData({ output: '云函数已响应，但自检失败 ❌\n\ncode=' + res.code + ' ' + (res.msg || '') });
+        return;
+      }
       const d = res.data || {};
+      const llm = d.llm || {};
+      const se = d.search || {};
       const lines = [
-        '云函数已部署 ✅',
-        '环境 ID：' + config.CLOUD_ENV_ID,
-        'baseUrl：' + (d.baseUrl || '-'),
-        '模型：' + (d.model || '-'),
-        '降级链：' + (d.fallback || '-'),
-        'Key 已配置：' + (d.keyReady ? '是 ✅' : '否 ❌ 去云开发控制台配 LLM_API_KEY')
-      ];
+        '云函数已部署 ✅  自检总耗时 ' + (d.totalMs || 0) + 'ms',
+        '',
+        '【大模型】' + (llm.ok ? '可用 ✅' : '不可用 ❌'),
+        '  Key：' + (llm.keyReady ? llm.key : '未配置'),
+        '  端点：' + (llm.baseUrl || '-'),
+        '  模型：' + (llm.model || '-'),
+        llm.warn ? '  ⚠️ ' + llm.warn : '',
+        '  可用模型：' + (llm.models && llm.models.length ? llm.models.join(' / ') : '未取到'),
+        '  /models ' + (llm.modelsMs != null ? llm.modelsMs + 'ms' : '-') +
+          ' · 试生成 ' + (llm.chatMs != null ? llm.chatMs + 'ms' : '未测'),
+        llm.error ? '  错误：' + llm.error : '',
+        '',
+        '【联网搜索】' + (se.ok ? '可用 ✅' : se.keyReady ? '调用失败 ❌' : '未配置 ⚠️'),
+        '  Key：' + (se.keyReady ? se.key : '未配置'),
+        '  Provider：' + (se.provider || '-') + (se.providerExplicit ? '（显式）' : '（默认 / 自动识别）'),
+        '  耗时：' + (se.ms != null ? se.ms + 'ms' : '-') + ' · 命中 ' + (se.count || 0) + ' 条',
+        se.reason ? '  说明：' + se.reason : '',
+        se.sample ? '  示例：' + se.sample : ''
+      ].filter(Boolean);
       this.setData({ output: lines.join('\n') });
-      wx.showToast({ title: d.keyReady ? '云函数正常' : '还差 LLM_API_KEY', icon: 'none' });
+      wx.showToast({
+        title: llm.ok ? (se.ok ? '模型与搜索都正常' : '模型正常，搜索待查') : '模型不可用',
+        icon: 'none'
+      });
     } catch (e) {
       const msg = (e && (e.errMsg || e.message)) || String(e);
       let hint = '未知原因';

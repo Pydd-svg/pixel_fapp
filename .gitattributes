@@ -1,0 +1,11 @@
+# 行尾统一：Windows 上 core.autocrlf=true 会把脚本写成 CRLF，
+# 云函数里的 bash 启动脚本带 \r 会直接报 bad interpreter，必须钉死 LF。
+* text=auto eol=lf
+
+# 云函数 HTTP 启动脚本：Bash 脚本，必须 LF
+cloudfunctions/*/scf_bootstrap text eol=lf
+*.sh text eol=lf
+
+# Windows 批处理反过来，必须 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

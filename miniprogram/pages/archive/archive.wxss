@@ -1,16 +1,41 @@
-/* 我的档案：卡片堆叠感（左侧色条 + 依次入场），空态复用 state-view */
+/* 我的档案：Hacknet 式逐层刷出
+   每张卡按序延迟入场，左侧色条从上往下长出来，同时一条淡绿光带扫过卡面。
+   动画一律用 backwards：延迟期间保持首帧（不可见），播完即交还给普通样式，
+   否则 animation-fill-mode: both 会把 transform 锁死，按下时的 is-pressed 缩放就不生效了 */
 .page-archive { min-height: 100vh; box-sizing: border-box; padding: var(--sp-card) var(--sp-card) var(--sp-lg); }
 .ar-head { padding: var(--sp-sm) 0 var(--sp-gap); animation: bk-rise var(--motion-base) var(--ease-out) both; }
 .ar-head-row { display: flex; align-items: flex-end; justify-content: space-between; }
 .ar-head-title { font-size: var(--fs-display); font-weight: 800; letter-spacing: -2rpx; color: var(--c-ink); }
-.ar-head-count { font-size: var(--fs-title); font-weight: 800; color: var(--c-primary-press); }
+.ar-head-count { font-family: var(--font-mono); font-size: var(--fs-title); font-weight: 800; letter-spacing: 0; color: var(--c-primary-press); }
 .ar-head-max { font-size: var(--fs-pill); font-weight: 600; color: var(--c-text-3); }
 .ar-head-note { display: block; margin-top: var(--sp-xs); font-size: var(--fs-hint); color: var(--c-text-3); }
 
-.ar-empty { margin-top: var(--sp-lg); }
-.ar-list { animation: bk-fade var(--motion-base) var(--ease-out) both; }
-.ar-item { position: relative; overflow: hidden; background: var(--c-card); border-radius: var(--r-card); padding: var(--sp-card) var(--sp-card) var(--sp-card) var(--sp-lg); margin-bottom: var(--sp-gap); box-shadow: var(--shadow-card); animation: bk-rise var(--motion-base) var(--ease-out) both; }
+.ar-empty { margin-top: var(--sp-sm); }
+/* 空态插画别再顶出一大块留白（组件默认 padding 是给整页态用的） */
+.ar-empty .sv-root { padding-top: var(--sp-gap); }
+/* 容器不再整体淡入，节奏交给每张卡自己的延迟 */
+.ar-list { animation: none; }
+
+.ar-item { position: relative; overflow: hidden; background: var(--c-card); border-radius: var(--r-card); padding: var(--sp-card) var(--sp-card) var(--sp-card) var(--sp-lg); margin-bottom: var(--sp-gap); box-shadow: var(--shadow-card); animation: ar-write 340ms var(--ease-out) backwards; }
+
+/* 左侧色条：跟着卡片一起淡入（父级 opacity 会带它走，不必单独做动画） */
 .ar-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 8rpx; background: var(--c-primary-soft); }
+
+/* 写入扫描：一条淡绿光带从卡片上方扫下去，扫完停在 opacity 0。
+   延迟直接写在节点上，不依赖继承或 CSS 变量 */
+.ar-sweep { position: absolute; left: 0; right: 0; top: 0; height: 96rpx; pointer-events: none; opacity: 0; background: linear-gradient(to bottom, var(--c-primary-soft) 0%, var(--c-bg-fade) 100%); animation: ar-sweep 520ms var(--ease-out) backwards; }
+
+@keyframes ar-write {
+  from { opacity: 0; transform: translateY(22rpx) scale(.992); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes ar-sweep {
+  0% { opacity: .85; transform: translateY(-100%); }
+  55% { opacity: .55; }
+  100% { opacity: 0; transform: translateY(300rpx); }
+}
+
 .ar-item-top { display: flex; align-items: center; justify-content: space-between; }
 .ar-title { flex: 1; font-size: var(--fs-body); font-weight: 700; color: var(--c-ink); }
 .ar-del { flex: none; min-height: 88rpx; display: flex; align-items: center; padding-left: var(--sp-gap); font-size: var(--fs-pill); color: var(--c-text-3); }

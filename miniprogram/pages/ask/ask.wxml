@@ -1,0 +1,93 @@
+<view class="page-ask">
+  <view wx:if="{{demoMode}}" class="ax-demo">演示模式 · 数据为预置样例</view>
+
+  <block wx:if="{{!followupVisible}}">
+    <!-- 分区标题 -->
+    <view class="ax-section">
+      <view class="ax-section-title">想问问什么</view>
+      <view class="ax-section-more" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">全部档案 ›</view>
+    </view>
+
+    <!-- 品类胶囊 -->
+    <view class="ax-quick-tags">
+      <view wx:for="{{quickTags}}" wx:key="*this" class="ax-tag-wrap" data-text="{{item}}"
+        hover-class="is-pressed" hover-stay-time="80" bindtap="onQuickTag">
+        <tag-pill text="{{item}}" />
+      </view>
+    </view>
+
+    <!-- 使用前必读 + 内存释放式倒计时 -->
+    <view class="ax-gate {{gateGone ? 'is-gone' : ''}}">
+      <read-gate id="rg" seconds="{{12}}" items="{{readItems}}" skip="{{demoMode}}" bind:done="onGateDone" />
+    </view>
+
+    <!-- 输入卡 -->
+    <view class="ax-input-card">
+      <view class="ax-input-head">
+        <view class="ax-input-label">说说你想买的东西</view>
+        <view class="ax-input-badge">第 1 步</view>
+      </view>
+      <textarea class="ax-input" value="{{rawInput}}" bindinput="onInput" maxlength="200"
+        placeholder="例如：预算 3000 的笔记本，主要用来写论文" placeholder-class="bk-placeholder"
+        adjust-position="{{true}}" />
+      <view class="ax-input-foot">
+        <view class="ax-input-tip">预算 · 用途 · 在意的点</view>
+        <view class="ax-input-limit">最多 200 字</view>
+      </view>
+    </view>
+
+    <!-- 引导去第 2 步 -->
+    <view class="ax-tip" hover-class="is-pressed" hover-stay-time="80" bindtap="goVerify">
+      <view class="ax-tip-dot"></view>
+      <view class="ax-tip-body">
+        <view class="ax-tip-title">请用具体商品名 / 型号</view>
+        <view class="ax-tip-desc">若对结果不满意，可以去第 2 步详细搜索</view>
+      </view>
+      <view class="ax-tip-go">›</view>
+    </view>
+
+    <!-- 流式预览：模型边写边显，标题/红线先出来 -->
+    <view wx:if="{{loading && (liveTitle || liveFlags.length)}}" class="ax-live">
+      <view class="ax-live-label">正在生成 · 先看到的部分</view>
+      <view wx:if="{{liveTitle}}" class="ax-live-title">{{liveTitle}}</view>
+      <view wx:for="{{liveFlags}}" wx:key="*this" class="ax-live-flag">
+        <view class="ax-live-dot"></view>
+        <text class="ax-live-flag-text">{{item}}</text>
+      </view>
+      <view class="ax-live-bar"></view>
+    </view>
+
+    <button class="ax-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
+      loading="{{loading}}" disabled="{{loading}}">{{loading ? ('正在生成 ' + loadingSec + 's…') : '生成避坑决策卡'}}</button>
+    <view class="ax-send-note">{{loading && loadingSec >= 8 ? '云端刚被唤醒时会慢一点，最长等 20 秒' : '只做辅助，不替你下单'}}</view>
+  </block>
+
+  <block wx:else>
+    <!-- 追问态：留在本页补信息 -->
+    <view class="ax-chat-card">
+      <view class="ax-chat-label">再补一句，结论更准</view>
+      <view class="ax-chat">
+        <view wx:for="{{bubbles}}" wx:key="ts" class="ax-bubble ax-bubble-{{item.role}}">
+          <type-writer wx:if="{{item.role === 'assistant' && index === bubbles.length - 1}}"
+            text="{{item.content}}" speed="{{35}}" bind:done="onTypeWriterDone" />
+          <text wx:else>{{item.content}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="ax-quick-replies">
+      <view wx:for="{{quickReplies}}" wx:key="*this" class="ax-tag-wrap" data-text="{{item}}"
+        hover-class="is-pressed" hover-stay-time="80" bindtap="onQuickReply">
+        <tag-pill text="{{item}}" />
+      </view>
+    </view>
+    <view class="ax-input-card ax-input-sticky">
+      <input class="ax-input-single" value="{{rawInput}}" bindinput="onInput" maxlength="200"
+        placeholder="补充说明…" placeholder-class="bk-placeholder" adjust-position="{{true}}" />
+      <button class="ax-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
+        loading="{{loading}}" disabled="{{loading}}">发送</button>
+    </view>
+  </block>
+
+  <state-view wx:if="{{showStateView}}" state="{{stateViewState}}"
+    title="{{stateViewTitle}}" desc="{{stateViewDesc}}" bind:retry="onRetry" />
+</view>

@@ -1,0 +1,31 @@
+<!-- 外层只负责「高度」：从整卡高度连续收到 0，配合 overflow:hidden
+     视觉上就是卡片从底边往上化掉，下方内容跟着落下来 -->
+<view class="rg-stage {{dying ? 'is-dying' : ''}} {{gone ? 'is-gone' : ''}}" style="{{stageStyle}}">
+  <view class="rg-card">
+    <!-- 头部带计时块：文字擦除时由下往上最后擦它（黑块也跟着一起没了，不会剩一根黑线） -->
+    <view class="rg-head" style="animation-delay:{{items.length * 70}}ms">
+      <text class="rg-title">使用前必读</text>
+
+      <!-- 计时器：纯数字，两位定宽，不闪不跳；右侧跟一个 Hacknet 终端光标 -->
+      <view class="rg-timer" bindtap="onTimerTap" bindlongpress="onTimerLongPress">
+        <text wx:for="{{chars}}" wx:key="i" class="rg-ch {{item.unit ? 'unit' : ''}}">{{item.ch}}</text>
+        <view wx:if="{{!dying}}" class="rg-caret"></view>
+      </view>
+    </view>
+
+    <!-- 三条必读：越靠下越先擦，节奏比卡片收缩快一档 -->
+    <view class="rg-lines">
+      <view wx:for="{{items}}" wx:key="tag" class="rg-line"
+        style="animation-delay:{{(items.length - 1 - index) * 70}}ms">
+        <text class="rg-tag">{{item.tag}}</text>
+        <view class="rg-line-b">
+          <text class="rg-line-t">{{item.title}}</text>
+          <text class="rg-line-d">{{item.desc}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 回收边：一层柔和的渐隐带，卡片内容往上淡进页面底色，不留硬切口 -->
+  <view wx:if="{{dying}}" class="rg-front"></view>
+</view>

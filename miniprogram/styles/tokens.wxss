@@ -23,11 +23,15 @@ page {
   --c-text-2: #4E5B54;
   --c-text-3: #93A09A;
   --c-bg: #F4F6F0;
+  /* 与 --c-bg 同色但全透明：给渐隐遮罩用，别在组件里写死 rgba */
+  --c-bg-fade: rgba(244, 246, 240, 0);
   --c-bg-warm: #FBFCF8;
   --c-surface-2: #EFF2EA;
   --c-card: #FFFFFF;
   --c-line: #E5EAE1;
   --c-on-primary: #16241F;
+  --c-on-dark: #FBFCF8;
+  --c-on-dark-dim: rgba(251, 252, 248, .60);
 
   /* 语义色 */
   --c-warn: #F0A93B;
@@ -74,6 +78,23 @@ page {
   --motion-sheet: 300ms;
   --ease-out: cubic-bezier(.22, .9, .3, 1);
   --ease-spring: cubic-bezier(.34, 1.4, .5, 1);
+
+  /* ---- Hacknet 终端风：使用前必读卡的故障溶解倒计时 ----
+     刻意跳出奶油/柠檬体系，用近黑底 + 荧光绿等宽字，制造「机器在倒计时」的对比 */
+  --c-term-bg: #0B100A;
+  --c-term-bg-2: #111A0F;
+  --c-term-fg: #CBF04F;
+  --c-term-fg-dim: rgba(203, 240, 79, .56);
+  --c-term-line: rgba(203, 240, 79, .16);
+  --c-term-scan: rgba(203, 240, 79, .05);
+  --c-term-bar-off: rgba(203, 240, 79, .18);
+  --c-term-glow: rgba(203, 240, 79, .10);
+  --c-term-shadow: rgba(11, 16, 10, .30);
+  --c-term-ghost-cyan: #5BE3C6;
+  --c-term-ghost-magenta: #E8597F;
+
+  /* 等宽字族（倒计时 / 终端文案） */
+  --font-mono: "SF Mono", "Menlo", "Consolas", "Courier New", monospace;
 
   /* ---- 旧变量兼容别名（dev 页 / 遗留组件继续可用） ---- */
   --c-primary-text: var(--c-primary-press);

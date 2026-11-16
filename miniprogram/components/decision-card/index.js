@@ -26,6 +26,8 @@ Component({
     entityText: '',
     categoryLabel: '',
     priceNote: '',
+    // price_source=estimate：价格是品类行情估算，界面上要标出来，不能当成实时报价
+    isEstimate: false,
     refsList: [],
     fallbackFlags: FALLBACK_FLAGS,
     expanded: {}
@@ -42,6 +44,7 @@ Component({
         entityText: entities.length ? entities.slice(0, 2).join('、') : '该商品',
         categoryLabel: d ? (C.CATEGORY_LABEL[d.category] || '该类') : '该类',
         priceNote: d ? (d.price_note || '') : '',
+        isEstimate: !!d && d.price_source === 'estimate',
         refsList: d && Array.isArray(d.knowledge_refs) ? d.knowledge_refs : []
       });
       if (state !== 'done') this.setData({ expanded: {} });

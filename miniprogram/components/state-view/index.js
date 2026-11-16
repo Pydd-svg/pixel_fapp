@@ -10,7 +10,9 @@ Component({
   properties: {
     state: { type: String, value: 'loading' },   // loading | empty | degraded | demo
     title: { type: String, value: '' },
-    desc: { type: String, value: '' }
+    desc: { type: String, value: '' },
+    // 按钮文案由调用方决定：empty 态不该写「重试」（这里没有可重试的动作）
+    actionText: { type: String, value: '重试' }
   },
   data: { viewTitle: '', viewDesc: '' },
   observers: {

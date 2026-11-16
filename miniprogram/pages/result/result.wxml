@@ -8,7 +8,7 @@
     bind:share="onShare" bind:report="onReport" bind:retry="onRetry" />
 
   <state-view wx:else state="empty" title="还没有决策卡" desc="回到首页问一句，就会生成"
-    bind:retry="onRetry" />
+    action-text="回首页" bind:retry="goHome" />
 
   <verify-sheet visible="{{verifyVisible}}" data="{{verifyData}}" state="{{verifyState}}"
     bind:close="onCloseVerify" />

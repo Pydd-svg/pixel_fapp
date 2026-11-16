@@ -1,0 +1,188 @@
+/* 第 2 步「全网搜索评价」页 */
+.page-verify {
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: var(--sp-gap) var(--sp-card) 60rpx;
+}
+
+/* 标题区 */
+.vf-head { padding: var(--sp-sm) 0 var(--sp-gap); }
+
+.vf-head-row {
+  display: flex;
+  align-items: center;
+}
+
+.vf-head-bar {
+  width: 10rpx;
+  height: 40rpx;
+  margin-right: var(--sp-sm);
+  border-radius: var(--r-pill);
+  background: var(--c-primary);
+}
+
+.vf-head-title {
+  font-size: var(--fs-title);
+  font-weight: 800;
+  letter-spacing: -1rpx;
+  color: var(--c-ink);
+}
+
+.vf-head-sub {
+  margin-top: var(--sp-sm);
+  font-size: var(--fs-hint);
+  line-height: 1.55;
+  color: var(--c-text-2);
+}
+
+/* 输入卡 */
+.vf-card {
+  padding: var(--sp-card);
+  border-radius: var(--r-card);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
+  animation: bk-rise var(--motion-base) var(--ease-out) both;
+}
+
+.vf-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-sm);
+}
+
+.vf-card-label {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--c-ink);
+}
+
+.vf-card-badge {
+  padding: 4rpx var(--sp-sm);
+  border-radius: var(--r-pill);
+  background: var(--c-primary-soft);
+  color: var(--c-primary-press);
+  font-size: var(--fs-pill);
+  font-weight: 700;
+}
+
+.vf-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 200rpx;
+  padding: var(--sp-gap);
+  border-radius: var(--r-btn);
+  background: var(--c-surface-2);
+  font-size: var(--fs-body);
+  line-height: 1.6;
+  color: var(--c-ink);
+}
+
+.vf-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--sp-sm);
+}
+
+.vf-hint,
+.vf-count {
+  font-size: var(--fs-pill);
+  color: var(--c-text-3);
+}
+
+/* 主按钮 */
+.vf-send {
+  width: 100%;
+  min-height: 104rpx;
+  margin-top: var(--sp-gap);
+  border-radius: var(--r-card);
+  background: var(--c-primary);
+  color: var(--c-on-primary);
+  box-shadow: var(--shadow-card);
+  font-size: var(--fs-body);
+  font-weight: 800;
+  letter-spacing: 2rpx;
+  animation: bk-rise var(--motion-base) var(--ease-out) 60ms both;
+}
+
+.vf-send[disabled] { opacity: .6; }
+
+/* 结果区 */
+.vf-result {
+  margin-top: var(--sp-gap);
+  padding: var(--sp-card);
+  border-radius: var(--r-card);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
+  animation: bk-rise var(--motion-base) var(--ease-out) both;
+}
+
+.vf-loading,
+.vf-tip {
+  font-size: var(--fs-hint);
+  line-height: 1.6;
+  color: var(--c-text-2);
+}
+
+.vf-verdict {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.55;
+  color: var(--c-ink);
+}
+
+.vf-list { margin-top: var(--sp-gap); }
+
+.vf-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: var(--sp-sm);
+}
+
+.vf-item-dot {
+  flex: none;
+  width: 10rpx;
+  height: 10rpx;
+  margin: 14rpx var(--sp-sm) 0 0;
+  border-radius: var(--r-pill);
+  background: var(--c-primary-press);
+}
+
+.vf-item-text {
+  flex: 1;
+  font-size: var(--fs-hint);
+  line-height: 1.65;
+  color: var(--c-text-2);
+}
+
+.vf-caution {
+  margin-top: var(--sp-gap);
+  padding: var(--sp-sm) var(--sp-gap);
+  border-radius: var(--r-btn);
+  background: var(--c-danger-weak);
+  color: var(--c-danger-press);
+  font-size: var(--fs-hint);
+  line-height: 1.55;
+}
+
+.vf-sources {
+  margin-top: var(--sp-gap);
+  padding-top: var(--sp-sm);
+  border-top: 1rpx solid var(--c-line);
+  font-size: var(--fs-pill);
+  line-height: 1.7;
+  color: var(--c-text-3);
+}
+
+.vf-source {
+  margin-right: var(--sp-sm);
+  color: var(--c-text-2);
+}
+
+.vf-note {
+  margin-top: var(--sp-lg);
+  text-align: center;
+  font-size: var(--fs-pill);
+  color: var(--c-text-3);
+}

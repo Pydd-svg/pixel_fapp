@@ -26,107 +26,53 @@
     </view>
   </view>
 
-  <block wx:if="{{!followupVisible}}">
-    <!-- 浅绿数据卡 -->
-    <view class="idx-stat">
-      <view class="idx-stat-main">
-        <view class="idx-stat-caption">我的避坑档案</view>
-        <view class="idx-stat-num">{{archiveCount}}<text class="idx-stat-unit">张决策卡</text></view>
-        <view class="idx-stat-note">每次提问都会留下一张卡，随时回看</view>
-      </view>
-      <view class="idx-stat-art">
-        <view class="idx-stat-orbit"></view>
-        <view class="idx-stat-core"></view>
-      </view>
+  <!-- 第 1 步 -->
+  <view class="hm-step" hover-class="is-pressed" hover-stay-time="80" bindtap="goAsk">
+    <view class="hm-step-main">
+      <view class="hm-step-badge">第 1 步</view>
+      <view class="hm-step-title">先问一句，再下单</view>
+      <view class="hm-step-desc">说说想买的东西，30 秒出一张避坑卡</view>
     </view>
+    <view class="hm-step-go">›</view>
+  </view>
 
-    <!-- 分区标题 + 胶囊筛选 -->
-    <view class="idx-section">
-      <view class="idx-section-title">想问点什么</view>
-      <view class="idx-section-more" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">全部档案 ›</view>
+  <!-- 第 2 步 -->
+  <view class="hm-step hm-step-2" hover-class="is-pressed" hover-stay-time="80" bindtap="goVerify">
+    <view class="hm-step-main">
+      <view class="hm-step-badge">第 2 步</view>
+      <view class="hm-step-title">全网搜索评价</view>
+      <view class="hm-step-desc">看看真实用户怎么说，再决定买不买</view>
     </view>
-    <view class="idx-quick-tags">
-      <view wx:for="{{quickTags}}" wx:key="*this" class="idx-tag-wrap" data-text="{{item}}"
-        hover-class="is-pressed" hover-stay-time="80" bindtap="onQuickTag">
-        <tag-pill text="{{item}}" />
-      </view>
-    </view>
+    <view class="hm-step-go">›</view>
+  </view>
 
-    <!-- 输入卡 -->
-    <view class="idx-input-card">
-      <view class="idx-input-head">
-        <view class="idx-input-label">说说你想买的东西</view>
-        <view class="idx-input-badge">第 1 步</view>
+  <!-- 档案入口：与上面两张同款（深墨底 + 柠檬绿圆箭头），整卡可点 -->
+  <view class="hm-step hm-step-3" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">
+    <view class="hm-step-main">
+      <view class="hm-step-badge">我的档案</view>
+      <view class="hm-step-title">
+        <text class="idx-stat-num">{{archiveCount}}</text><text class="idx-stat-unit"> 张决策卡</text>
       </view>
-      <textarea class="idx-input" value="{{rawInput}}" bindinput="onInput" maxlength="200"
-        placeholder="例如：预算 3000 的笔记本，主要用来写论文" placeholder-class="bk-placeholder" adjust-position="{{true}}" />
-      <view class="idx-input-foot">
-        <view class="idx-input-tip">预算 · 用途 · 在意的点</view>
-        <view class="idx-input-limit">最多 200 字</view>
-      </view>
+      <view class="hm-step-desc">每次提问都会留下一张卡，随时回看</view>
     </view>
+    <view class="hm-step-go">›</view>
+  </view>
 
-    <!-- 列表卡 -->
-    <view class="idx-list">
-      <view wx:if="{{hasArchive}}" class="idx-list-row" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">
-        <view class="idx-list-icon idx-list-icon-a">档</view>
-        <view class="idx-list-body">
-          <view class="idx-list-title">最近看过</view>
-          <view class="idx-list-desc">回看之前生成的决策卡</view>
-        </view>
-        <view class="idx-list-arrow">›</view>
+  <!-- 最近看过 -->
+  <view wx:if="{{hasArchive}}" class="idx-list">
+    <view class="idx-list-row idx-list-row-last" hover-class="is-pressed" hover-stay-time="80" bindtap="goArchive">
+      <view class="idx-list-icon idx-list-icon-a">档</view>
+      <view class="idx-list-body">
+        <view class="idx-list-title">最近看过</view>
+        <view class="idx-list-desc">回看之前生成的决策卡</view>
       </view>
-      <view class="idx-list-row">
-        <view class="idx-list-icon idx-list-icon-b">坑</view>
-        <view class="idx-list-body">
-          <view class="idx-list-title">先看红线，再看依据</view>
-          <view class="idx-list-desc">每个结论都带可点开的来源</view>
-        </view>
-      </view>
-      <view class="idx-list-row idx-list-row-last">
-        <view class="idx-list-icon idx-list-icon-c">词</view>
-        <view class="idx-list-body">
-          <view class="idx-list-title">一键复制搜索关键词</view>
-          <view class="idx-list-desc">拿着关键词去平台自己核对</view>
-        </view>
-      </view>
+      <view class="idx-list-arrow">›</view>
     </view>
+  </view>
 
-    <!-- 通栏主按钮 -->
-    <button class="idx-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
-      loading="{{loading}}" disabled="{{loading}}">{{loading ? '正在生成…' : '生成避坑决策卡'}}</button>
-    <view class="idx-send-note">只做辅助，不替你下单</view>
-  </block>
-
-  <block wx:else>
-    <!-- 追问态 -->
-    <view class="idx-chat-card">
-      <view class="idx-chat-label">再补一句，结论更准</view>
-      <view class="idx-chat">
-        <view wx:for="{{bubbles}}" wx:key="ts" class="idx-bubble idx-bubble-{{item.role}}">
-          <type-writer wx:if="{{item.role === 'assistant' && index == bubbles.length - 1}}"
-            text="{{item.content}}" speed="{{35}}" bind:done="onTypeWriterDone" />
-          <text wx:else>{{item.content}}</text>
-        </view>
-      </view>
-    </view>
-    <view class="idx-quick-replies">
-      <view wx:for="{{quickReplies}}" wx:key="*this" class="idx-tag-wrap" data-text="{{item}}"
-        hover-class="is-pressed" hover-stay-time="80" bindtap="onQuickReply">
-        <tag-pill text="{{item}}" />
-      </view>
-    </view>
-    <view class="idx-input-card idx-input-sticky">
-      <input class="idx-input-single" value="{{rawInput}}" bindinput="onInput" maxlength="200"
-        placeholder="补充说明…" placeholder-class="bk-placeholder" adjust-position="{{true}}" />
-      <button class="idx-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
-        loading="{{loading}}" disabled="{{loading}}">发送</button>
-    </view>
-  </block>
-
-  <!-- 底部图标导航行 -->
+  <!-- 底部双入口 -->
   <view class="idx-dock">
-    <view class="idx-dock-item idx-dock-on">
+    <view class="idx-dock-item" hover-class="is-pressed" hover-stay-time="80" bindtap="goAsk">
       <view class="idx-dock-icon">问</view>
       <text class="idx-dock-text">问一句</text>
     </view>
@@ -134,16 +80,5 @@
       <view class="idx-dock-icon idx-dock-icon-b">档</view>
       <text class="idx-dock-text">我的档案</text>
     </view>
-    <view class="idx-dock-item">
-      <view class="idx-dock-icon idx-dock-icon-c">据</view>
-      <text class="idx-dock-text">有据可查</text>
-    </view>
-    <view class="idx-dock-item">
-      <view class="idx-dock-icon idx-dock-icon-d">助</view>
-      <text class="idx-dock-text">只做辅助</text>
-    </view>
   </view>
-
-  <state-view wx:if="{{showStateView}}" state="{{stateViewState}}"
-    title="{{stateViewTitle}}" desc="{{stateViewDesc}}" bind:retry="onRetry" />
 </view>

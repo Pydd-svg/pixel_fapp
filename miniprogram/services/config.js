@@ -81,7 +81,17 @@ const FEATURE = {
   quota: false,
   // 内容安全检查（msgSecCheck）。关闭后 E_CONTENT 分支不会触发，
   // 只允许在额度紧张时临时关闭，提交前必须为 true
-  secCheck: true
+  secCheck: true,
+  // 出卡前是否先联网检索一次真实报价。
+  // 开着：卡片能写真实价格区间，代价是多一次搜索往返（约 1-3 秒）。
+  // 关掉：出卡快 1-3 秒，价格只能是 estimate（品类参考区间），不是实时报价。
+  // 答辩现场网络差时，把这个改成 false 是最省事的减延迟开关。
+  decideWebSearch: true,
+  // 流式出卡（HTTP 云函数 aiStreamHTTP + callHTTPFunction + SSE）。
+  // 打开前必须先把 cloudfunctions/aiStreamHTTP 部署为「HTTP 云函数」，
+  // 否则会多一次失败尝试再回落（不影响结果，只是白花 0.3s）。
+  // 开着的好处：标题/红线 1-2 秒就能看见，不用盯着转圈等整张卡。
+  stream: false
 };
 
 /* ------------------------------------------------------------------ *
@@ -101,6 +111,12 @@ const CACHE_TTL = {
  * 7. 云函数名
  * ------------------------------------------------------------------ */
 const CLOUD_FN_NAME = 'aiFallback';
+// 流式通道：HTTP 云函数名（必须与 cloudfunctions/aiStreamHTTP 目录同名）。
+// 注意：这个名字是「HTTP 云函数」，只能在云开发控制台新建时选类型，
+// 命令行部署建出来的只会是普通事件函数，callHTTPFunction 会返回 400。
+const STREAM_FN_NAME = 'aiStreamHTTP';
+// 流式整条链路的兜底时限（含检索）。超过就直接回落普通通道。
+const STREAM_TOTAL_MS = 25000;
 
 /* ------------------------------------------------------------------ *
  * 8. System Prompt（B 岗在控制台维护最终版；此处为代码侧兜底）
@@ -127,18 +143,22 @@ const DECIDE_SYSTEM_PROMPT = [
   '   宁可少推荐也必须写红线。',
   '',
   '# 硬约束（价格纪律）',
-  '- 价格只能来自两类来源：① 知识库正文明确写出的数字；② 本轮联网检索返回的实际报价。',
-  '- 两者都没有时：price_source 填 null，price_note 写「知识库与联网搜索均未获得该商品的实际报价」，',
-  '  recommendations 的 price_expectation 一律填空字符串，禁止用品类经验补价格。',
-  '- 品类经验只能用于折扣率判断（低于官方六折要怀疑、二手常见七到八折），不得换算成具体价格。',
-  '- 有来源时 price_expectation 必须写成「数字-数字元」区间，不许用「约」「左右」「起」。',
+  '- price_source 分三档：kb / web = 有真实报价来源；estimate = 按品类行情估算的参考区间；null = 连品类都判断不出。',
+  '- 默认必须给价格：只要大致知道品类，就必须写 price_expectation，把它当作给用户看的参考区间。',
+  '- 有知识库数字或本轮检索到的报价时：用真实区间，price_source 填 kb 或 web。',
+  '- 没有真实来源时：仍要按品类行情给一个大致范围（如千元机 900-1800元、入门蓝牙耳机 80-250元），',
+  '  price_source 填 estimate，price_note 固定写「参考区间，按品类行情估算，非实时报价」。',
+  '- 估算区间要给得宽（上下浮动三到五成），宁可宽一点，也不要给精确到个位的数字。',
+  '- 只有连品类都判断不出时，price_source 才填 null、price_expectation 留空。',
+  '- 无论哪一档，price_expectation 都必须写成「数字-数字元」，不许用「约」「左右」「起」。',
   '',
   '# 硬约束（实体核实）',
   '- 用户提到的具体商品名 / 角色名 / IP / 型号，不得默认真实存在。',
   '- 检索结果里有对应商品时 entity_status 填 "verified"；只有品类词、没有具体商品时填 "partial"；',
   '  用户说了具体名称但检索不到、或结果明显不相关时填 "unknown"。',
   '- entity_status="unknown" 时：unverified_entities 填用户提到的具体名称（1-3 个），',
-  '  search_keyword 去掉该名称、只保留品类词，卡片只给品类通用避坑建议，price_source 必须为 null。',
+  '  search_keyword 去掉该名称、只保留品类词，卡片只给品类通用避坑建议；',
+  '  价格仍要给，但只能按同品类行情写参考区间，price_source 填 estimate。',
   '- 严禁根据名称字面联想编造型号、系列、角色或联名信息。',
   '',
   '# 硬约束（通用）',
@@ -159,11 +179,11 @@ const DECIDE_SYSTEM_PROMPT = [
   '    "category": "laptop|digital|chao_wan|beauty|bed|study|universal",',
   '    "budget_band": "如 200-300，未知填 未指定",',
   '    "tags": ["0-4个，每个≤8字"],',
-  '    "price_source": "kb|web|null",',
-  '    "price_note": "≤60字；无可靠来源时写明未获得实际报价",',
+  '    "price_source": "kb|web|estimate|null",',
+  '    "price_note": "≤60字；estimate 时写「参考区间，按品类行情估算，非实时报价」",',
   '    "entity_status": "verified|partial|unknown",',
   '    "unverified_entities": ["0-3个未被核实的名称"],',
-  '    "recommendations": [{"type":"首选方案|备选方案","name":"","price_expectation":"200-280元 或 空字符串","pros":"≤40字","cons":"≤40字"}],',
+  '    "recommendations": [{"type":"首选方案|备选方案","name":"","price_expectation":"200-280元（必填，实在判断不出才留空）","pros":"≤40字","cons":"≤40字"}],',
   '    "red_flags": ["1-3条，每条≤40字"],',
   '    "search_keyword": "≤30字，不含链接",',
   '    "knowledge_refs": ["真实条目id，0-4个"],',
@@ -202,9 +222,9 @@ const PROMPT_PATCH_NO_KB = [
   '- 当前没有接入知识库：knowledge_refs 一律输出空数组 []，confidence 一律填 "low"，',
   '  并在首选方案的 cons 里提醒「该品类掌握有限，建议多平台比价」。',
   '- budget_band 只能是纯数字区间（如 200-300），判断不出就写「未指定」。',
-  '- price_expectation：只有知识库数字或本轮联网报价做依据时才写「数字-数字元」（如 240-300元）；',
-  '  没有可靠来源就填空字符串 ""，同时 price_source=null、price_note 写明未获得实际报价。',
-  '  禁止用品类经验或预算换算成具体价格。',
+  '- price_expectation：有知识库数字或本轮联网报价时写真实区间（如 240-300元），price_source 填 kb/web；',
+  '  没有真实来源时也要给「数字-数字元」的品类参考区间（如 800-1500元），price_source 填 estimate，',
+  '  price_note 写「参考区间，按品类行情估算，非实时报价」。只有连品类都判断不出才留空、price_source=null。',
   '- card_title ≤20 字；tags 每个 ≤8 字、最多 4 个；',
   '  pros / cons 每条 ≤40 字；red_flags 每条 ≤40 字、1-3 条。',
   '- search_keyword ≤30 字，不得含 http 或任何形式的链接。',
@@ -221,9 +241,9 @@ const PROMPT_PATCH_WITH_KB = [
   '- <knowledge> 覆盖本次需求时 confidence 至少填 "medium"；明显不覆盖时才填 "low"，',
   '  并在首选方案的 cons 里说明「该品类掌握有限，建议多平台比价」。',
   '- budget_band 只能是纯数字区间（如 200-300），判断不出就写「未指定」。',
-  '- price_expectation：只有知识库数字或本轮联网报价做依据时才写「数字-数字元」（如 240-300元）；',
-  '  没有可靠来源就填空字符串 ""，同时 price_source=null、price_note 写明未获得实际报价。',
-  '  禁止用品类经验或预算换算成具体价格。',
+  '- price_expectation：有知识库数字或本轮联网报价时写真实区间（如 240-300元），price_source 填 kb/web；',
+  '  没有真实来源时也要给「数字-数字元」的品类参考区间（如 800-1500元），price_source 填 estimate，',
+  '  price_note 写「参考区间，按品类行情估算，非实时报价」。只有连品类都判断不出才留空、price_source=null。',
   '- card_title ≤20 字；tags 每个 ≤8 字、最多 4 个；',
   '  pros / cons 每条 ≤40 字；red_flags 每条 ≤40 字、1-3 条。',
   '- search_keyword ≤30 字，不得含 http 或任何形式的链接。',
@@ -265,6 +285,8 @@ module.exports = {
   LIMIT,
   CACHE_TTL,
   CLOUD_FN_NAME,
+  STREAM_FN_NAME,
+  STREAM_TOTAL_MS,
   DECIDE_SYSTEM_PROMPT,
   VERIFY_SYSTEM_PROMPT,
   PROMPT_PATCH_NO_KB,

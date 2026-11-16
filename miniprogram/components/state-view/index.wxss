@@ -3,10 +3,14 @@
 .sv-mark { display: flex; align-items: center; justify-content: center; width: 128rpx; height: 128rpx; border-radius: var(--r-pill); background: var(--c-primary-soft); color: var(--c-primary-press); font-size: var(--fs-title); font-weight: 800; animation: bk-pop var(--motion-base) var(--ease-spring) both; }
 .sv-title { font-size: var(--fs-body); font-weight: 700; color: var(--c-ink); margin-top: var(--sp-gap); }
 .sv-desc { font-size: var(--fs-hint); color: var(--c-text-3); margin-top: var(--sp-xs); }
-.sv-retry { min-height: 88rpx; margin-top: var(--sp-gap); padding: 0 var(--sp-lg); border: 2rpx solid var(--c-primary); border-radius: var(--r-pill); background: var(--c-card); color: var(--c-primary-press); font-size: var(--fs-hint); font-weight: 600; }
+/* button 自带 ::after 边框，会和这里的 border 叠成双线 */
+.sv-retry { display: flex; align-items: center; justify-content: center; min-width: 180rpx; min-height: 76rpx; margin-top: var(--sp-gap); padding: 0 var(--sp-lg); border: 2rpx solid var(--c-primary); border-radius: var(--r-btn); background: var(--c-card); color: var(--c-primary-press); font-size: var(--fs-hint); font-weight: 600; line-height: 1; }
+.sv-retry::after { border: none; }
 
 .sv-degraded .sv-mark, .sv-demo .sv-mark { background: var(--c-warn-weak); color: var(--c-warn); }
-.sv-empty .sv-mark { background: var(--c-surface-2); color: var(--c-text-3); }
+/* 空态不用字母"o"（容易被读成数字 0，和档案计数混在一起），画一个短横 */
+.sv-empty .sv-mark { position: relative; background: var(--c-surface-2); color: transparent; }
+.sv-empty .sv-mark::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44rpx; height: 4rpx; margin: -2rpx 0 0 -22rpx; border-radius: 2rpx; background: var(--c-text-3); }
 
 .sv-skeleton { width: 100%; box-sizing: border-box; margin-top: var(--sp-gap); background: var(--c-card); border-radius: var(--r-card); padding: var(--sp-gap); }
 .sv-sk-line, .sv-sk-block { background-image: linear-gradient(90deg, var(--c-skeleton) 20%, var(--c-shimmer) 50%, var(--c-skeleton) 80%); background-size: 640rpx 100%; animation: bk-shimmer 1.4s linear infinite; border-radius: var(--r-btn); }

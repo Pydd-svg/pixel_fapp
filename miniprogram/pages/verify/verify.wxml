@@ -1,0 +1,56 @@
+<view class="page-verify">
+  <!-- 标题区 -->
+  <view class="vf-head">
+    <view class="vf-head-row">
+      <view class="vf-head-bar"></view>
+      <view class="vf-head-title">全网搜索评价</view>
+    </view>
+    <view class="vf-head-sub">拿关键词去公开网络检索，只汇总有出处的说法，不编口碑</view>
+  </view>
+
+  <!-- 输入卡 -->
+  <view class="vf-card">
+    <view class="vf-card-head">
+      <view class="vf-card-label">想查什么的口碑</view>
+      <view class="vf-card-badge">第 2 步</view>
+    </view>
+    <textarea class="vf-input" value="{{keyword}}" bindinput="onInput" maxlength="30"
+      placeholder="例如：索尼 WH-1000XM5 降噪" placeholder-class="bk-placeholder"
+      adjust-position="{{true}}" />
+    <view class="vf-foot">
+      <view class="vf-hint">品类 + 型号 / 系列，越具体越准</view>
+      <view class="vf-count">{{keyword.length}}/30</view>
+    </view>
+  </view>
+
+  <button class="vf-send" hover-class="is-pressed" hover-stay-time="80" bindtap="onSubmit"
+    loading="{{loading}}" disabled="{{loading}}">{{loading ? '正在检索…' : '开始搜索评价'}}</button>
+
+  <!-- 检索结果 -->
+  <view wx:if="{{state !== 'idle'}}" class="vf-result">
+    <view wx:if="{{state === 'loading'}}" class="vf-loading">正在检索全网口碑…</view>
+
+    <view wx:elif="{{state === 'done'}}" class="vf-done">
+      <view class="vf-verdict">{{verdict}}</view>
+
+      <view wx:if="{{feedback.length}}" class="vf-list">
+        <view wx:for="{{feedback}}" wx:key="*this" class="vf-item">
+          <view class="vf-item-dot"></view>
+          <text class="vf-item-text">{{item}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{caution}}" class="vf-caution">注意：{{caution}}</view>
+
+      <view wx:if="{{sources.length}}" class="vf-sources">
+        来源：<text wx:for="{{sources}}" wx:key="*this" class="vf-source">{{item}}</text>
+      </view>
+    </view>
+
+    <view wx:elif="{{state === 'empty'}}" class="vf-tip">暂未检索到有效口碑，换个更具体的型号试试</view>
+
+    <view wx:else class="vf-tip">当前检索繁忙，稍后再试{{errorCode ? '（' + errorCode + '）' : ''}}</view>
+  </view>
+
+  <view class="vf-note">只汇总公开说法，不替代专业评测，也不给购买链接</view>
+</view>

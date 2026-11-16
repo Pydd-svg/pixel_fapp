@@ -1,0 +1,21 @@
+#!/bin/bash
+# HTTP 云函数启动脚本
+# 要求：可执行权限、LF 换行、解释器用绝对路径、监听 0.0.0.0:9000
+export PORT=9000
+export HOST=0.0.0.0
+
+# 运行时版本决定 node 的绝对路径。SCF 各语言包布局随版本变化，
+# 这里按「新→旧」逐个探测，最后兜底用 PATH 里的 node。
+for v in 22 20 18 16; do
+  if [ -x "/var/lang/node${v}/bin/node" ]; then
+    exec "/var/lang/node${v}/bin/node" index.js
+  fi
+done
+
+for p in /usr/local/bin/node /usr/bin/node /opt/nodejs/bin/node; do
+  if [ -x "$p" ]; then
+    exec "$p" index.js
+  fi
+done
+
+exec node index.js

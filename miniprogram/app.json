@@ -1,6 +1,8 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/ask/ask",
+    "pages/verify/verify",
     "pages/result/result",
     "pages/archive/archive",
     "pages/dev/dev"

@@ -7,6 +7,9 @@
  *   validate*  = 只做「契约判废」——缺字段、空数组、单一价格、含链接，一律判废。
  * 语义类错误（红线为空、价格是单值）**不在归一化里偷偷补**，
  * 判废后由 aiClient 重试一次，仍失败才降级 —— 否则数据来源无法自证。
+ * 唯一例外：模型声称有价格来源却给不出任何可核验区间时，整卡降为 estimate
+ * （保留/展开成品类参考区间），而不是让整张卡作废或整片价格清空 ——
+ * 见 normalizeDecisionData。
  */
 
 const C = require('./constants');
@@ -93,16 +96,50 @@ function normalizeTags(v) {
   return uniq(arr).slice(0, L.TAG_COUNT);
 }
 
-function normalizePrice(v) {
-  // 先剥掉空格与「元」，再统一各种区间连接符，最后补回「元」
-  const s = str(v).replace(/\s/g, '').replace(/元/g, '');
-  const m = s.match(/(\d+(?:\.\d+)?)[-~至到—－](?:\d+(?:\.\d+)?)/);
-  if (m) {
-    // m[0] 形如 200-280；重新取两端，避免把连接符后的位数吃掉
-    const nums = m[0].match(/\d+(?:\.\d+)?/g);
-    if (nums && nums.length >= 2) return nums[0] + '-' + nums[1] + '元';
+/**
+ * 价格归一化：只负责「把模型写的各种区间写法收成 数字-数字元」。
+ * 容错面要宽 —— 模型可能写：
+ *   200-280元 / 200~280元 / 200 – 280 元 / 200至280元 / 1,200-1,500元 / 1.2万-1.5万
+ * 这些都是同一个意思，不该因为连接符或千分位不同就判废整张卡。
+ * 单值（约250元）：estimate 档展开成大致范围（±25%/30%），kb/web 档仍返回空串 ——
+ * 真实来源却只给一个数，说明模型在含糊其辞，不能替它编区间。
+ */
+const PRICE_NUM_RE = /\d+(?:,\d{3})*(?:\.\d+)?/g;
+
+/**
+ * 单值 → 参考区间。按量级取整，避免出现 238.7-412.3 这种假精确。
+ * 下浮 25%、上浮 30%，再对齐到量级步长（2000 以上按 200，500 以上按 100…）。
+ */
+function widenSingle(n) {
+  const step = n >= 5000 ? 500 : n >= 2000 ? 200 : n >= 500 ? 100 : n >= 100 ? 20 : n >= 20 ? 5 : 1;
+  const lo = Math.max(step, Math.round((n * 0.75) / step) * step);
+  const hi = Math.max(lo + step, Math.round((n * 1.3) / step) * step);
+  return [lo, hi];
+}
+
+function normalizePrice(v, allowSingle) {
+  const raw = str(v);
+  if (!raw) return '';
+  const s = raw.replace(/\s/g, '');
+  const perWan = /万/.test(s);
+  const nums = (s.match(PRICE_NUM_RE) || [])
+    .map((t) => Number(t.replace(/,/g, '')))
+    .filter((n) => isFinite(n) && n > 0);
+  if (!nums.length) return '';
+
+  if (nums.length < 2) {
+    if (!allowSingle) return '';
+    const [lo, hi] = widenSingle(nums[0] * (perWan ? 10000 : 1));
+    return lo + '-' + hi + '元';
   }
-  return str(v); // 保持原样，交给 validate 判废
+
+  const k = perWan ? 10000 : 1;
+  let lo = Math.min(nums[0], nums[1]) * k;
+  let hi = Math.max(nums[0], nums[1]) * k;
+  if (!isFinite(lo) || !isFinite(hi) || hi <= 0) return '';
+  // 去掉多余小数尾巴（2680.00 -> 2680）
+  const fmt = (n) => String(Number(n.toFixed(2)));
+  return fmt(lo) + '-' + fmt(hi) + '元';
 }
 
 function normalizeRecommendations(v, errors, priceSource) {
@@ -110,6 +147,8 @@ function normalizeRecommendations(v, errors, priceSource) {
     errors.push('recommendations 不是数组');
     return [];
   }
+  // estimate（品类估算）允许把模型给的单值展开成范围；kb / web 只认真实区间
+  const allowSingle = priceSource === 'estimate';
   const out = v
     .filter(isObj)
     .map((r, i) => {
@@ -118,8 +157,8 @@ function normalizeRecommendations(v, errors, priceSource) {
       return {
         type,
         name: clamp(str(r.name), 24),
-        // 没有可靠价格来源时一律清空，前端显示「暂无可靠报价」
-        price_expectation: priceSource ? normalizePrice(r.price_expectation) : '',
+        // 没有价格来源时清空，前端提示「参考区间暂缺」
+        price_expectation: priceSource ? normalizePrice(r.price_expectation, allowSingle) : '',
         pros: clamp(str(r.pros), L.PROS),
         cons: clamp(str(r.cons), L.CONS)
       };
@@ -168,12 +207,23 @@ function normalizeDecisionData(raw, errors) {
   if (!isObj(raw)) return null;
   const category = C.CATEGORY.indexOf(str(raw.category)) !== -1 ? str(raw.category) : 'universal';
 
-  // 价格来源：只有 kb / web 才算有来源，其余（含 null、"null"、缺失）一律视为没有
+  // 价格来源：kb / web = 真实报价，estimate = 品类行情估算，其余视为"没说"
   let priceSource = str(raw.price_source).toLowerCase();
-  if (priceSource !== 'kb' && priceSource !== 'web') priceSource = '';
+  if (['kb', 'web', 'estimate'].indexOf(priceSource) === -1) priceSource = '';
+
+  // 模型没标来源却写了价格：当作估算档保留 —— 用户要的是"大致范围"，
+  // 因为一个字段没填就把整卡价格清空，是最差的处理
+  const rawRecs = Array.isArray(raw.recommendations) ? raw.recommendations : [];
+  if (!priceSource && rawRecs.some((r) => isObj(r) && str(r.price_expectation))) {
+    priceSource = 'estimate';
+  }
+
   let priceNote = clamp(str(raw.price_note), 60);
+  if (priceSource === 'estimate' && !priceNote) {
+    priceNote = '参考区间，按品类行情估算，非实时报价';
+  }
   if (!priceSource) {
-    priceNote = priceNote || '知识库与联网搜索均未获得该商品的实际报价，请以下单页价格为准';
+    priceNote = priceNote || '暂未取得该商品的参考区间，请以下单页价格为准';
   }
 
   // 实体核实：unknown 必须带具体名称，否则降级为 partial，避免空提示
@@ -181,14 +231,35 @@ function normalizeDecisionData(raw, errors) {
   if (['verified', 'partial', 'unknown'].indexOf(entityStatus) === -1) entityStatus = 'partial';
   const entities = normalizeEntities(raw.unverified_entities);
   if (entityStatus === 'unknown' && !entities.length) entityStatus = 'partial';
-  // 具体商品都没核实到，就不能挂任何具体价格
+  // 具体商品没核实到：仍然给「同品类大致范围」，只是把来源锁死在 estimate
   if (entityStatus === 'unknown') {
-    priceSource = '';
-    priceNote = '未核实到该商品，暂无可靠报价';
+    if (priceSource === 'kb' || priceSource === 'web') priceSource = 'estimate';
+    if (!priceSource) priceSource = 'estimate';
+    priceNote = '未核实到该商品，以下为同品类参考区间，非该型号实时报价';
   }
 
   const refs = normalizeRefs(raw.knowledge_refs);
-  const recs = normalizeRecommendations(raw.recommendations, errors, priceSource);
+  let recs = normalizeRecommendations(raw.recommendations, errors, priceSource);
+
+  // 价格一致性兜底：模型声称有来源（kb/web），却一条可核验区间都给不出来时，
+  // 不死判整卡，也不清空价格 —— 降到 estimate 用同一批原始数据重算一次，
+  // 单值／「约250元」这类写法在估算档下会被展开成大致范围。
+  if (priceSource === 'kb' || priceSource === 'web') {
+    const priced = recs.filter((r) => !!str(r.price_expectation));
+    if (!priced.length) {
+      console.warn('[schema] price_source=' + priceSource + ' 但无可核验区间，降为 estimate');
+      priceSource = 'estimate';
+      priceNote = '未取得可核验报价，以下为同品类参考区间';
+      const retry = normalizeRecommendations(raw.recommendations, [], 'estimate');
+      if (retry.length) recs = retry;
+    }
+  }
+
+  // 估算也给不出任何数字：退回无价格态，前端提示"参考区间暂缺"
+  if (priceSource === 'estimate' && !recs.some((r) => !!str(r.price_expectation))) {
+    priceSource = '';
+    priceNote = '暂未取得可用的参考区间，请以下单页价格为准';
+  }
   let confidence = C.CONFIDENCE.indexOf(str(raw.confidence)) !== -1 ? str(raw.confidence) : 'medium';
   if (!refs.length) confidence = 'low'; // 契约 §4.1 硬约束
 
@@ -310,9 +381,9 @@ function validateDecisionCard(card, opts) {
     if (countChars(t) > L.TAG) errors.push('tag 超过 ' + L.TAG + ' 字：' + t);
   });
 
-  // 价格纪律：price_source=null 时必须没有任何价格；有来源时才校验区间
-  if (!(d.price_source === null || d.price_source === 'kb' || d.price_source === 'web')) {
-    errors.push('price_source 必须是 kb / web / null');
+  // 价格纪律：price_source=null 时必须没有任何价格；其余档位校验区间格式
+  if (!(d.price_source === null || d.price_source === 'kb' || d.price_source === 'web' || d.price_source === 'estimate')) {
+    errors.push('price_source 必须是 kb / web / estimate / null');
   }
   if (d.price_source === null && hasAnyPrice(d.recommendations)) {
     errors.push('price_source=null 时 price_expectation 必须为空');
@@ -333,19 +404,26 @@ function validateDecisionCard(card, opts) {
   if (!Array.isArray(d.recommendations) || d.recommendations.length < 1 || d.recommendations.length > L.REC_COUNT) {
     errors.push('recommendations 必须是 1-' + L.REC_COUNT + ' 项');
   } else {
+    // 有来源时：非空的价格必须合法，且至少 1 项给出可核验区间。
+    // 允许个别方案空价（前端显示「暂无可靠报价」）—— 一条缺价不该让整张卡作废。
+    let priced = 0;
     d.recommendations.forEach((r, i) => {
       const at = 'recommendations[' + i + ']';
       if (C.REC_TYPE.indexOf(r.type) === -1) errors.push(at + '.type 非法');
       if (!str(r.name)) errors.push(at + '.name 缺失');
-      if (!options.skipPriceCheck && d.price_source !== null) {
+      if (!options.skipPriceCheck && d.price_source !== null && str(r.price_expectation)) {
         const p = str(r.price_expectation);
         const m = p.match(/(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)元/);
-        if (!m) errors.push(at + '.price_expectation 必须是区间（含 - 与 元）');
+        if (!m) errors.push(at + '.price_expectation 格式非法（应为 数字-数字元）');
         else if (Number(m[1]) > Number(m[2])) errors.push(at + '.price_expectation 下限大于上限');
+        else priced++;
       }
       if (countChars(r.pros) > L.PROS) errors.push(at + '.pros 超过 ' + L.PROS + ' 字');
       if (countChars(r.cons) > L.CONS) errors.push(at + '.cons 超过 ' + L.CONS + ' 字');
     });
+    if (!options.skipPriceCheck && d.price_source !== null && priced === 0) {
+      errors.push('price_source 非空时至少 1 项 price_expectation 必须是区间');
+    }
   }
 
   if (!Array.isArray(d.red_flags) || d.red_flags.length < 1 || d.red_flags.length > L.RED_FLAG_COUNT) {

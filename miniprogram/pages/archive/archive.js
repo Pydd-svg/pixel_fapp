@@ -27,7 +27,7 @@ Page({
   },
 
   refresh() {
-    const list = storage.listCards().map((x) => ({
+    const list = storage.listCards().map((x, i) => ({
       id: x.id,
       title: x.title,
       category: x.category,
@@ -35,7 +35,10 @@ Page({
       confidence: x.confidence,
       confidenceLabel: CONF_LABEL[x.confidence] || '未标注',
       status: x.status,
-      tsText: fmt(x.ts)
+      tsText: fmt(x.ts),
+      // Hacknet 式逐层刷出：每条错开 90ms，超过 8 条就一起收尾，
+      // 避免第 20 条要等将近 2 秒才出现
+      delay: Math.min(i * 90, 720)
     }));
     this.setData({ list, empty: !list.length, count: list.length });
   },

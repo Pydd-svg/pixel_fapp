@@ -52,7 +52,7 @@
         "name": { "type": "string", "maxLength": 24 },
         "price_expectation": {
           "type": ["string", "null"],
-          "description": "有可靠来源时才写「数字-数字元」区间；price_source=null 时必须为空字符串或 null",
+          "description": "有真实来源或品类估算时才写「数字-数字元」区间；price_source=null 时必须为空字符串或 null",
           "anyOf": [
             { "const": "" },
             { "const": null },
@@ -77,8 +77,8 @@
         },
         "budget_band": { "type": "string" },
         "price_source": {
-          "enum": ["kb", "web", null],
-          "description": "价格来源：知识库数字 / 联网报价 / 无可靠来源"
+          "enum": ["kb", "web", "estimate", null],
+          "description": "价格来源：知识库数字 / 联网报价 / 品类行情估算 / 连品类都判断不出"
         },
         "price_note": { "type": "string", "maxLength": 60 },
         "entity_status": {

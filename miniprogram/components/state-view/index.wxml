@@ -2,6 +2,6 @@
   <view class="sv-mark">{{state === 'degraded' ? '!' : (state === 'demo' ? 'D' : (state === 'empty' ? 'o' : '·'))}}</view>
   <view class="sv-title">{{viewTitle}}</view>
   <view class="sv-desc">{{viewDesc}}</view>
-  <button wx:if="{{state === 'degraded' || state === 'empty'}}" class="sv-retry" hover-class="is-pressed" hover-stay-time="80" bindtap="onRetry">重试</button>
+  <button wx:if="{{state === 'degraded' || state === 'empty'}}" class="sv-retry" hover-class="is-pressed" hover-stay-time="80" bindtap="onRetry">{{actionText}}</button>
   <view wx:if="{{state === 'loading'}}" class="sv-skeleton"><view class="sv-sk-line"></view><view class="sv-sk-line"></view><view class="sv-sk-block"></view></view>
 </view>

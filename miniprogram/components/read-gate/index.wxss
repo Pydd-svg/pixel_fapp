@@ -1,0 +1,227 @@
+/* read-gate：使用前必读（白卡）
+   归零后文字先擦掉、整卡再从下往上连续化掉，参照 Hacknet 释放内存。
+   颜色一律取 tokens.wxss，不在此处写死色值 */
+
+/* ---------- 舞台：只负责高度，消融时从整卡高度连续收到 0 ---------- */
+/* 投影挂在舞台上而不是卡片上：overflow 一开就会把子元素的投影裁掉，
+   挂在自己身上才能随高度一起收，不会"啪"地消失 */
+.rg-stage {
+  position: relative;
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* 消融开始才裁切（平时不裁） */
+.rg-stage.is-dying,
+.rg-stage.is-gone {
+  overflow: hidden;
+}
+
+/* 高度交给 CSS transition 连续收缩；投影同时淡出，收尾自然 */
+.rg-stage.is-dying {
+  box-shadow: none;
+  transition: height 900ms cubic-bezier(.4, 0, .2, 1), box-shadow 260ms linear;
+  /* 收尾兜底：最后 20rpx 左右只是一条白边，顺手淡掉，
+     免得任何残留（边框/圆角）在顶端闪一根线 */
+  animation: rg-tail 180ms linear 680ms both;
+}
+
+/* 断尾：把最后那点残影收干净 */
+@keyframes rg-tail {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.rg-card {
+  position: relative;
+  padding: 30rpx 30rpx 10rpx;
+  background: var(--c-card);
+  border: 2rpx solid var(--c-line);
+  border-radius: var(--r-card);
+  animation: rg-rise var(--motion-base) var(--ease-out) both;
+}
+
+/* ---------- 头部 ---------- */
+.rg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10rpx;
+}
+
+.rg-title {
+  flex: 1;
+  font-size: 36rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
+  color: var(--c-text-1);
+}
+
+/* ---------- 倒计时黑块 ---------- */
+/* 定宽：两位数字永远占同样宽度，块和数字都不会随秒数跳；
+   宽度含右侧光标，比纯数字时宽 20rpx */
+.rg-timer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 132rpx;
+  height: 48rpx;
+  border-radius: 8rpx;
+  background: var(--c-term-bg);
+  overflow: hidden;
+}
+
+/* 单个字符：不设最小宽度，靠等宽字体保证字距稳定 */
+.rg-ch {
+  font-family: var(--font-mono);
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 1rpx;
+  text-align: center;
+  color: var(--c-term-fg);
+  text-shadow: 0 0 10rpx var(--c-term-fg-dim);
+}
+
+/* 单位 s：小一号、暗一档，贴着数字 */
+.rg-ch.unit {
+  margin-left: 2rpx;
+  font-size: 20rpx;
+  letter-spacing: 0;
+  color: var(--c-term-fg-dim);
+  text-shadow: none;
+  transform: translateY(2rpx);
+}
+
+/* Hacknet 终端光标：数字右边一个实心小方块，硬切闪烁（不是渐隐） */
+/* 尺寸取数字高度的一半多一点，方块比例才对；辉光跟数字同色 */
+.rg-caret {
+  flex: none;
+  width: 13rpx;
+  height: 26rpx;
+  margin-left: 10rpx;
+  border-radius: 2rpx;
+  background: var(--c-term-fg);
+  box-shadow: 0 0 10rpx var(--c-term-fg-dim);
+  animation: rg-caret 1.05s steps(1, end) infinite;
+}
+
+/* ---------- 回收边：一条柔和的渐隐带 ---------- */
+/* 不再是一排跳动的断口块，而是一条 64rpx 的渐变：
+   底部用页面底色把内容盖实，往上透出去 —— 内容像化掉而不是被切开 */
+.rg-front {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  height: 64rpx;
+  background: linear-gradient(to top, var(--c-bg) 12%, var(--c-bg-fade) 100%);
+  pointer-events: none;
+}
+
+/* ---------- 三条必读 ---------- */
+.rg-lines {
+  margin-top: 4rpx;
+}
+
+.rg-line {
+  display: flex;
+  align-items: flex-start;
+  padding: 22rpx 0;
+  border-top: 2rpx solid var(--c-line);
+}
+
+.rg-line:first-child {
+  border-top: none;
+}
+
+.rg-tag {
+  flex: none;
+  width: 44rpx;
+  height: 44rpx;
+  margin-right: 18rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8rpx;
+  background: var(--c-primary-soft);
+  color: var(--c-text-1);
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.rg-line-b {
+  flex: 1;
+  padding-top: 2rpx;
+}
+
+.rg-line-t {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--c-text-1);
+}
+
+.rg-line-d {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 24rpx;
+  line-height: 1.55;
+  color: var(--c-text-3);
+}
+
+/* ---------- 文字擦除：和卡片收缩并行，但快一档 ---------- */
+/* 每条内容各自淡出并轻微上浮，延迟由 WXML 按行序注入（越靠下越早，70ms 一档）。
+   整串 250+210=460ms 擦完，卡片收缩是 900ms —— 文字先走完、白卡再收干净。
+   计时块在头部里，必须在卡边扫到它之前就擦掉，否则收尾会剩一根黑线：
+   黑块离卡顶约 78rpx（占卡高 6%~16%），按 900ms 缓动，卡边大约 550ms 才吃到这里。 */
+.rg-stage.is-dying .rg-head,
+.rg-stage.is-dying .rg-line {
+  animation-name: rg-erase;
+  animation-duration: 250ms;
+  animation-timing-function: var(--ease-out);
+  animation-fill-mode: both;
+}
+
+/* ---------- 动画 ---------- */
+@keyframes rg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 终端光标：亮、灭各占一半，配合 steps(1) 硬切 —— 不做渐隐，才像真的光标 */
+@keyframes rg-caret {
+  0%,
+  49.9% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes rg-erase {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8rpx);
+  }
+}

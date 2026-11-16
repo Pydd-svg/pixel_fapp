@@ -8,12 +8,16 @@
   </view>
 
   <view wx:if="{{empty}}" class="ar-empty">
-    <state-view state="empty" title="还没有保存过决策卡" desc="出卡后点【保存】就会出现在这里" bind:retry="goHome" />
+    <state-view state="empty" title="还没有保存过决策卡" desc="出卡后点【保存】就会出现在这里"
+      action-text="去问一句" bind:retry="goHome" />
   </view>
 
   <view wx:else class="ar-list">
     <view wx:for="{{list}}" wx:key="id" class="ar-item" data-id="{{item.id}}"
+      style="animation-delay:{{item.delay}}ms"
       hover-class="is-pressed" hover-stay-time="80" bindtap="onOpen" bindlongpress="onDelete">
+      <!-- 写入扫描：卡片出现后一条淡绿光带从上往下扫一遍 -->
+      <view class="ar-sweep" style="animation-delay:{{item.delay + 60}}ms"></view>
       <view class="ar-item-top">
         <text class="ar-title">{{item.title}}</text>
         <text class="ar-del" data-id="{{item.id}}" catchtap="onDelete">删除</text>

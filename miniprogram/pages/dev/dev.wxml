@@ -36,7 +36,7 @@
   </view>
 
   <view class="dev__row">
-    <view class="dev__btn tap" bindtap="onCloudPing">云函数连通自检</view>
+    <view class="dev__btn tap" bindtap="onCloudPing">模型 / 搜索体检（health）</view>
     <view class="dev__btn tap" bindtap="onClearCache">清缓存</view>
     <view class="dev__btn tap" bindtap="onClearOutput">清输出</view>
   </view>
